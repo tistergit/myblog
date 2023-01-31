@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>docker on Tister Blog</title>
+    <link>http://www.tister.cn/tags/docker/</link>
+    <description>Recent content in docker on Tister Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <lastBuildDate>Wed, 23 Nov 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://www.tister.cn/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Rancher初探</title>
+      <link>http://www.tister.cn/posts/rancher%E5%88%9D%E6%8E%A2/</link>
+      <pubDate>Wed, 23 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/rancher%E5%88%9D%E6%8E%A2/</guid>
+      <description>Rancher概览 Rancher是一个开源的企业级容器管理平台。通过Rancher，企业再也不必自己使用一系列的开源软件去从头搭建容器服务平台。Rancher提供了在生产环境中使用的管理Docker和Kubernetes的全栈化容器部署与管理平台。
+基础设施编排 Rancher可以使用任何公有云或者私有云的Linux主机资源。Linux主机可以是虚拟机，也可以是物理机。Rancher仅需要主机有CPU，内存，本地磁盘和网络资源。从Rancher的角度来说，一台云厂商提供的云主机和一台自己的物理机是一样的。
+Rancher为运行容器化的应用实现了一层灵活的基础设施服务。Rancher的基础设施服务包括网络， 存储， 负载均衡， DNS和安全模块。Rancher的基础设施服务也是通过容器部署的，所以同样Rancher的基础设施服务可以运行在任何Linux主机上。
+容器编排与调度 很多用户都会选择使用容器编排调度框架来运行容器化应用。Rancher包含了当前全部主流的编排调度引擎，例如Docker Swarm， Kubernetes， 和Mesos。同一个用户可以创建Swarm或者Kubernetes集群。并且可以使用原生的Swarm或者Kubernetes工具管理应用。
+除了Swarm，Kubernetes和Mesos之外，Rancher还支持自己的Cattle容器编排调度引擎。Cattle被广泛用于编排Rancher自己的基础设施服务以及用于Swarm集群，Kubernetes集群和Mesos集群的配置，管理与升级。
+应用商店 Rancher的用户可以在应用商店里一键部署由多个容器组成的应用。用户可以管理这个部署的应用，并且可以在这个应用有新的可用版本时进行自动化的升级。Rancher提供了一个由Rancher社区维护的应用商店，其中包括了一系列的流行应用。Rancher的用户也可以创建自己的私有应用商店。
+企业级权限管理 Rancher支持灵活的插件式的用户认证。支持Active Directory，LDAP， Github等 认证方式。 Rancher支持在环境级别的基于角色的访问控制 (RBAC)，可以通过角色来配置某个用户或者用户组对开发环境或者生产环境的访问权限。
+下图展示了Rancher的主要组件和功能：
+Rancher安装 我选择是在云上搭建一个小Rancher集群来测试，也给大家说一下省钱的小秘密，云上有一种竞价实例的模式，相对正常的预付费模式的云主机要便宜很多，非常适合这种学习性质的临时使用。这次我使用的就是腾讯云上的6台2core/4G的 CVM来进行本次测试。主机信息如下：
+主机名 内部IP 外部IP 功能 rancher_manager 10.206.0.13 xxxx Rancher主控节点 worker1 10.206.0.6 xxx ETCD&amp;amp;Control Plane&amp;amp;Worker worker2 10.206.0.8 xxx ETCD&amp;amp;Control Plane&amp;amp;Worker worker3 10.206.0.11 xxx ETCD&amp;amp;Control Plane&amp;amp;Worker worker4 10.206.0.16 xxx Worker worker5 10.206.0.2 xxx Worker 通过 hostnamectl 变更主机名称，例如：
+sudo hostnamectl hostname --static worker1 特别注意 需要确认 /etc/hosts 文件中，有主机名与内部IP的对应记录，如：</description>
+    </item>
+    
+    <item>
+      <title>vscode本地容器开发篇</title>
+      <link>http://www.tister.cn/posts/vsc_local_container/</link>
+      <pubDate>Mon, 14 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/vsc_local_container/</guid>
+      <description>前言 大家肯定有遇过需要在别的电脑重新安装开发环境，可能搞完半天什么代码都没写，环境还没搞好；又或是项目成员的开发环境设定不一致造成一些莫名其妙的问题
+如果能将开发环境设定纳入版本控管，让后续加入项目的成员可以马上开发，而不用再费心安装开发环境，岂不是很棒！
+VSCode 的Remote - Containers 是基于Docker 运行，下方图示可以看到程式码是通过Volume 挂载到Container，Container Port 映射到本地Port，执行命令、程序运行、Debugger 皆是在Container 中完成。如下图所示：
+容器开发有两种模式：
+基于本地容器的模式(本文描述的方式)
+要求本地安装Docker环境，Docker会把开发使用的镜像Pull到本地来运行，有点类似Python env模式；
+基于远程容器的模式
+Docker也运行于远程开发机上，本地机器通过ssh远程连接到目标开发机的容器中进行开发，有点类似瘦客户端模式，本地只要求安装VSC以及相关插件即可；
+环境准备 客户机：我用的是Mac M1机器，提前安装了Docker Desktop 和 vsc最新版本。vsc需要安装Dev Containers ：容器开发插件。安装方式：快捷键（⇧⌘X）打开扩展面板，搜索Dev Containers，点击安装即可。如下图： 免密钥登录 Mac客户机
+通过下述命令生成密钥对
+$ ssh-keygen // 生成密钥对 $ ssh-copy-id root@xxx.xxx.xxx.xxx Ubuntu服务器(一定要用Root账号) 配置sshd服务，让其可以实现Root用户通过私钥登录，编辑 /etc/ssh/sshd_config 文件，加入：
+PermitRootLogin without-password 注意： 一定要用Root账号才可以，因为Dev Containers插件要通过docker images查看Linux下所有的镜像，这个命令必须是Root账户才能执行，所以这里必须使用Root账号。又由于Ubuntu默认是不允许Root账号远程登录的，这里要多一些步骤才行。
+Ubuntu服务器配置 安装Docker 根据Docker官网上的操作流程安装Docker，这里请注意尽量按这个文档来安装Docker，不要通过apt install docker安装Ubuntu上默认的版本，那个版本可能有问题，造成不必要的麻烦 Ubuntu下安装Docker
+VSC配置 开发镜像制作 开发镜像根据实际开发的开发语言、依赖库不同而各异，建议自己通过编写Dockerfile的方式来制作，当然也可以在网上找别人已经制作好的镜像直接使用，或在此基础上进行更新。
+获取已有镜像： $ docker pull fatindeed/vscode-remote-go $ docker run -d -P --name go-dev --mount type=bind,source=/home/ubuntu/source,target=/app/source fatindeed/vscode-remote-go 通过编写Dockerfile构建一个镜像： 比如开发环境是基于python3和flask框架的一个Web项目，可以通过下述方式生成需要使用的镜像</description>
+    </item>
+    
+    <item>
+      <title>vscode远程容器开发篇</title>
+      <link>http://www.tister.cn/posts/vsc_remote_container/</link>
+      <pubDate>Mon, 14 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/vsc_remote_container/</guid>
+      <description>前言 大家肯定有遇过需要在别的电脑重新安装开发环境，可能搞完半天什么代码都没写，环境还没搞好；又或是项目成员的开发环境设定不一致造成一些莫名其妙的问题
+如果能将开发环境设定纳入版本控管，让后续加入项目的成员可以马上开发，而不用再费心安装开发环境，岂不是很棒！
+VSCode 的Remote - Containers 是基于Docker 运行，下方图示可以看到程式码是通过Volume 挂载到Container，Container Port 映射到本地Port，执行命令、程序运行、Debugger 皆是在Container 中完成。如下图所示：
+容器开发有两种模式：
+基于本地容器的模式
+要求本地安装Docker环境，Docker会把开发使用的镜像Pull到本地来运行，有点类似Python env模式；
+基于远程容器的模式
+Docker也运行于远程开发机上，本地机器通过ssh远程连接到目标开发机的容器中进行开发，有点类似瘦客户端模式，本地只要求安装VSC以及相关插件即可；
+环境准备 客户机：Mac M1机器 远程开发机：Linux（Ubuntu 22.04）
+机器的容器进行开发，这样对本地机器无其它要求，只要安装基础VSC以及插件即可。其它都在远程Linux机器的上，开发依赖的库文件和配置都在容器中，代码文件通过Docker Volume映射到Linux机器上。
+插件安装 Vscode插件 Vscode扩展中，搜索：Remote Development，它其实是一个Extension Packs,实际包括三个包：Dev Containers, Remote - SSH,WSL 三个。我们本次主要使用前面两个，也可以单独安装前面两个。
+Remote - SSH ：远程开发的基础插件，可以通过ssh连接远程主机进行开发 Dev Containers ：容器开发插件，基于Docker容器 免密钥登录 Mac客户机
+通过下述命令生成密钥对
+$ ssh-keygen // 生成密钥对 $ ssh-copy-id root@xxx.xxx.xxx.xxx Ubuntu服务器(一定要用Root账号) 配置sshd服务，让其可以实现Root用户通过私钥登录，编辑 /etc/ssh/sshd_config 文件，加入：
+PermitRootLogin without-password 注意： 一定要用Root账号才可以，因为Dev Containers插件要通过docker images查看Linux下所有的镜像，这个命令必须是Root账户才能执行，所以这里必须使用Root账号。又由于Ubuntu默认是不允许Root账号远程登录的，这里要多一些步骤才行。
+Ubuntu服务器配置 安装Docker 根据Docker官网上的操作流程安装Docker，这里请注意尽量按这个文档来安装Docker，不要通过apt install docker安装Ubuntu上默认的版本，那个版本可能有问题，造成不必要的麻烦 Ubuntu下安装Docker</description>
+    </item>
+    
+  </channel>
+</rss>

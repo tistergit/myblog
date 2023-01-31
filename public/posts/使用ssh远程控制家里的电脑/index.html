@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <title>使用ssh远程控制家里的电脑 // Tister Blog</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.103.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Tister" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="http://www.tister.cn/css/main.min.0fb49e70a30412f97ddfc418e18fefef1d9fcdebe45f634dbbba768b00fe1eec.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="使用ssh远程控制家里的电脑"/>
+<meta name="twitter:description" content="使用ssh远程控制家里的电脑 背景 家里有1台N年前的笔记本，给二手收也没几个钱，装了个Linux系统放在那里，偶尔周末玩一下。同时也购买了1台最小化的云主机，腾讯云新出的AMD CPU云主机，非常合算，在搞活动的时候一下买了4年。接下来告诉大家怎么通过云主机转发控制家里这台旧笔记本。 主角当然是ssh，通过它的远程端口转发，把云主机的2222端口转发到家里笔记本的22端口上，这样就可以在任意其它可上网的地方，远程访问到家里这台机器了。远程转发命令非常简单，如下：ssh -R 2222:localhost:22 root@www.tister.cn，这个命令会在www.tister.cn 这台云主机上开一个2222端口，转发到家里的笔记本的22端口上。问题是这个通道不是一直用，中间网络超时或断开的时候，这个转发通道就断了，不能重连。这里需要另外一个工具：autossh，它会侦测转发通道是否断开，如果断开就重连，保证了转发通道一直可用。下面说一下配置步骤：
+安装autossh yum -y install autossh 配置ssh免密码登录 首先通过ssh-keygen生成一个ssh公钥，之后利用ssh-copy-id命令把公钥拷贝到云主机上。
+ssh-copy-id root@www.tister.cn 拷贝成功后，使用ssh root@www.tister.cn 测试一下是否可以免密码登录。
+写一个systemd的开机自启动脚本 使用vim建立和编辑 /etc/systemd/system/remote-autossh.service 文件，内容如下：
+[Unit] Description=AutoSSH service for remote tunnel After=network-online.target [Service] User=root ExecStart=/usr/bin/autossh -M 20001 -N -o &#34;PubkeyAuthentication=yes&#34; -o &#34;StrictHostKeyChecking=false&#34; -o &#34;ServerAliveInterval 60&#34; -o &#34;ServerAliveCountMax 3&#34; -R 2222:localhost:22 root@www.tister.cn [Install] WantedBy=multi-user.target 配置开机自启动 systemctl daemon-reload systemctl enable remote-autossh.service systemctl start remote-autossh.service 验证 登录云主机，通过netstat -lnt 查看2222端口是不是存在。可以通过 ssh root@localhost -p 2222 ,输出家里笔记本的root密码，就可以登录家里的主机了。"/>
+
+    <meta property="og:title" content="使用ssh远程控制家里的电脑" />
+<meta property="og:description" content="使用ssh远程控制家里的电脑 背景 家里有1台N年前的笔记本，给二手收也没几个钱，装了个Linux系统放在那里，偶尔周末玩一下。同时也购买了1台最小化的云主机，腾讯云新出的AMD CPU云主机，非常合算，在搞活动的时候一下买了4年。接下来告诉大家怎么通过云主机转发控制家里这台旧笔记本。 主角当然是ssh，通过它的远程端口转发，把云主机的2222端口转发到家里笔记本的22端口上，这样就可以在任意其它可上网的地方，远程访问到家里这台机器了。远程转发命令非常简单，如下：ssh -R 2222:localhost:22 root@www.tister.cn，这个命令会在www.tister.cn 这台云主机上开一个2222端口，转发到家里的笔记本的22端口上。问题是这个通道不是一直用，中间网络超时或断开的时候，这个转发通道就断了，不能重连。这里需要另外一个工具：autossh，它会侦测转发通道是否断开，如果断开就重连，保证了转发通道一直可用。下面说一下配置步骤：
+安装autossh yum -y install autossh 配置ssh免密码登录 首先通过ssh-keygen生成一个ssh公钥，之后利用ssh-copy-id命令把公钥拷贝到云主机上。
+ssh-copy-id root@www.tister.cn 拷贝成功后，使用ssh root@www.tister.cn 测试一下是否可以免密码登录。
+写一个systemd的开机自启动脚本 使用vim建立和编辑 /etc/systemd/system/remote-autossh.service 文件，内容如下：
+[Unit] Description=AutoSSH service for remote tunnel After=network-online.target [Service] User=root ExecStart=/usr/bin/autossh -M 20001 -N -o &#34;PubkeyAuthentication=yes&#34; -o &#34;StrictHostKeyChecking=false&#34; -o &#34;ServerAliveInterval 60&#34; -o &#34;ServerAliveCountMax 3&#34; -R 2222:localhost:22 root@www.tister.cn [Install] WantedBy=multi-user.target 配置开机自启动 systemctl daemon-reload systemctl enable remote-autossh.service systemctl start remote-autossh.service 验证 登录云主机，通过netstat -lnt 查看2222端口是不是存在。可以通过 ssh root@localhost -p 2222 ,输出家里笔记本的root密码，就可以登录家里的主机了。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://www.tister.cn/posts/%E4%BD%BF%E7%94%A8ssh%E8%BF%9C%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%AE%B6%E9%87%8C%E7%9A%84%E7%94%B5%E8%84%91/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-09-18T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-09-18T00:00:00+00:00" />
+
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="http://www.tister.cn"><img class="app-header-avatar" src="/avatar.png" alt="Tister" /></a>
+      <span class="app-header-title">Tister Blog</span>
+      <nav class="app-header-menu">
+          <a class="app-header-menu-item" href="/">Home</a>
+             - 
+          
+          <a class="app-header-menu-item" href="/tags/">Tags</a>
+             - 
+          
+          <a class="app-header-menu-item" href="/about/">About</a>
+      </nav>
+      <p>强哥的自留地&lt;a href=&#39;aa&#39;&gt;aaa&lt;/a&gt;</p>
+      <div class="app-header-social">
+        
+          <a href="https://github.com/tistergit" target="_blank" rel="noreferrer noopener me">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>Github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+          </a>
+        
+          <a href="https://github.com/tistergit" target="_blank" rel="noreferrer noopener me">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>Github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+          </a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">使用ssh远程控制家里的电脑</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Sep 18, 2022
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          1 min read
+        </div>
+      </div>
+    </header>
+    <div class="post-content">
+      <h2 id="使用ssh远程控制家里的电脑">使用ssh远程控制家里的电脑</h2>
+<h3 id="背景">背景</h3>
+<p>家里有1台N年前的笔记本，给二手收也没几个钱，装了个Linux系统放在那里，偶尔周末玩一下。同时也购买了1台最小化的云主机，腾讯云新出的AMD CPU云主机，非常合算，在搞活动的时候一下买了4年。接下来告诉大家怎么通过云主机转发控制家里这台旧笔记本。
+主角当然是ssh，通过它的远程端口转发，把云主机的2222端口转发到家里笔记本的22端口上，这样就可以在任意其它可上网的地方，远程访问到家里这台机器了。远程转发命令非常简单，如下：ssh -R 2222:localhost:22 <a href="mailto:root@www.tister.cn">root@www.tister.cn</a>，这个命令会在www.tister.cn 这台云主机上开一个2222端口，转发到家里的笔记本的22端口上。问题是这个通道不是一直用，中间网络超时或断开的时候，这个转发通道就断了，不能重连。这里需要另外一个工具：autossh，它会侦测转发通道是否断开，如果断开就重连，保证了转发通道一直可用。下面说一下配置步骤：</p>
+<h3 id="安装autossh">安装autossh</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>yum -y install autossh
+</span></span></code></pre></div><h3 id="配置ssh免密码登录">配置ssh免密码登录</h3>
+<p>首先通过ssh-keygen生成一个ssh公钥，之后利用ssh-copy-id命令把公钥拷贝到云主机上。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>ssh-copy-id root@www.tister.cn
+</span></span></code></pre></div><p>拷贝成功后，使用ssh <a href="mailto:root@www.tister.cn">root@www.tister.cn</a> 测试一下是否可以免密码登录。</p>
+<h3 id="写一个systemd的开机自启动脚本">写一个systemd的开机自启动脚本</h3>
+<p>使用vim建立和编辑 /etc/systemd/system/remote-autossh.service 文件，内容如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#f92672">[</span>Unit<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>Description<span style="color:#f92672">=</span>AutoSSH service <span style="color:#66d9ef">for</span> remote tunnel
+</span></span><span style="display:flex;"><span>After<span style="color:#f92672">=</span>network-online.target
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Service<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>User<span style="color:#f92672">=</span>root
+</span></span><span style="display:flex;"><span>ExecStart<span style="color:#f92672">=</span>/usr/bin/autossh -M <span style="color:#ae81ff">20001</span> -N -o <span style="color:#e6db74">&#34;PubkeyAuthentication=yes&#34;</span> -o <span style="color:#e6db74">&#34;StrictHostKeyChecking=false&#34;</span> -o <span style="color:#e6db74">&#34;ServerAliveInterval 60&#34;</span> -o <span style="color:#e6db74">&#34;ServerAliveCountMax 3&#34;</span> -R 2222:localhost:22 root@www.tister.cn
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Install<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>WantedBy<span style="color:#f92672">=</span>multi-user.target
+</span></span></code></pre></div><h3 id="配置开机自启动">配置开机自启动</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>systemctl daemon-reload
+</span></span><span style="display:flex;"><span>systemctl enable remote-autossh.service
+</span></span><span style="display:flex;"><span>systemctl start remote-autossh.service
+</span></span></code></pre></div><h3 id="验证">验证</h3>
+<p>登录云主机，通过netstat -lnt 查看2222端口是不是存在。可以通过 ssh root@localhost -p 2222 ,输出家里笔记本的root密码，就可以登录家里的主机了。</p>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

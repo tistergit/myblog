@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <title>一图说清k8s中几个关键概念 // Tister Blog</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.103.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Tister" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="http://www.tister.cn/css/main.min.0fb49e70a30412f97ddfc418e18fefef1d9fcdebe45f634dbbba768b00fe1eec.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="一图说清k8s中几个关键概念"/>
+<meta name="twitter:description" content="k8s中几个关键概念 刚开始接触K8s的同学可能都会觉得有一定的学习难度，扑面而来的各种概念到底是什么。比如，如何提供一个服务给别人，我是应该用Pod还是用Deployment来运行我的应用等，在接下来的文章中，希望能够解答你的这些疑惑。
+Kubernetes可以看做云原生时代的操作系统，统一管理下层的基础设施，如计算资源、网络资源、存储资源等等。将集群中存在的各种复杂关系抽象成各种API资源，以统一的方式暴露出各种接口，也便于未来的扩展以及开发团队根据自己的需要定制。因此，我们可以看到在K8s中Docker仅仅是容器运行时的一个实现而已，只要遵守它的约定，实际上是可以替换为适合的其他容器技术的。基于这样的设计思路，理清各种API对象的作用和关系就变得很重要了，只有理解了才能正确地使用K8s，接下来我们就通过一张关系图一点点的来说明。
+通过Pod终结单容器的蛮荒时代
+在接触K8s之前，大多人首先要接触到的就是Docker。我们得到一个容器的镜像之后，要把应用运行起来最简单的方式就是docker run的命令。然而在实际的生产环境中，很少仅靠一个单容器就能够满足。比如，一个Web前端的应用，可能还得依赖后端的一个容器服务；后端的容器可能需要数据库服务；后端的服务需要多副本等等场景。在这些假想的场景中，比较真实的需求就是这些容器应用需要共享同一个网络栈，同一个存储卷等，还有它们的生命周期如何管理调度。这个时候，仅仅依靠容器无法解决这个问题，我们第一个选手Pod就闪亮登场了。
+Pod 内共享配置
+有了Pod之后，同一个Pod内的容器可以共享很多信息，也可能需要读取同一份配置。比如Pod内有两个容器需要访问同一个数据库，那么我们可以把相关的配置信息写到ConfigMap里。那如果还有一些比较敏感的信息的话，就需要放到Secret对象中，它其实是一个保存在 Etcd 里的键值对数据。这样，你把 Credential 信息以 Secret 的方式存在 Etcd 里，Kubernetes 就会在你指定的 Pod（比如，Web 应用的 Pod）启动时，自动把 Secret 里的数据以 Volume 的方式挂载到容器里。
+图片
+任务和定时任务
+有了Pod之后，事情就变得更清晰了。在集群内，我们可能会有多种形式的要求。比如，我们可能希望一个应用每天固定时间运行或者只允许运行一次，可能希望某个应用以守护进程的方式运行。在K8s里，自然也有方案来解决这些问题。
+首先来看定时任务的需求，假设我的系统内有一个全网信息排行榜展示，要求每天需要在凌晨0点的时候更新一次。这个需求在K8s里就可以用CronJob来搞定。而如果仅仅需要执行一次的任务，那就直接使用Job对象就可以了。
+图片
+默默工作的DaemonSet
+再接下来，可能需要以守护进程的方式运行一个应用。比如，我想要在后台进行日志的收集。这个时候DaemonSet就派上了用场，它会保证在所有的目标节点上运行一个Pod的副本。在这期间，如果有新的Node加入到K8s集群中的话，它也会自动完成调度，在新的机器上运行一个Pod副本。因此，前面说的监控、日志等任务很适合用DaemonSet的方式执行。
+图片
+Deployment管理Pod
+说完DaemonSet，下一个重点Deployment来了。前面说过容器之间的关联关系、共享资源等问题需要处理，从而引入了Pod。对于Pod，也是同样的问题需要解决，只不过高了一个抽象层次罢了。因为面临Pod的生命周期管理、调度、多副本等问题需要解决，聪明的设计者引入了Deployment。它可以根据我们的需求（比如通过标签）将Pod调度到目标机器上，调度完成之后，它还会继续帮我们继续监控容器是否在正确运行，一旦出现问题，会立刻告诉我们Pod的运行不正常以及寻找可能的解决方案，比如目标节点不可用的时候它可以快速地调度到别的机器上去。另外，如果需要对应用扩容提升响应能力的时候，通过Deployment可以快速地进行扩展。
+图片
+在实际的工作中，Deployment并不是直接控制着Pod的，中间实际上还有一个ReplicaSet，但是在这里为了简化理解过程，可以先忽略。
+提供容器服务
+前面的内容主要是围绕着Pod自身的运行调度管理，下面面临的问题是解决如何将服务提供给第三方的问题。
+对内提供服务
+首先要解决的是将服务提供给同一个集群内的其他服务使用。可能刚入门的同学会问为什么我们不能直接使用Pod的IP呢？原因是这样，前面也说过Pod是会被管理调度的，可能被调度到不同的机器上，同时生命周期也可能会发生变化。这导致一个应用的IP可能会随时发生变化，那么直接使用Pod的IP自然是不合理的。
+针对这个问题K8s提供了Service对象来解决。
+图片
+但是，并不是说Service就有一个固定的IP。而且，它和Pod IP还有很不一样的地方。Pod的网络是K8s在物理机上建立了一层Overlay Network实现的，而且在网卡上能够看到这个网络的地址。但是Service是一个完全虚拟的网络层，并不会存在于任何网络设备上。它通过修改集群内部的路由规则，仅对集群内部有效。Deploment创建好应用之后，再为它生成一个Service对象。接下来就可以通过Service的域名访问到服务，形式是&lt;Service Name&gt;.&lt;NameSpace&gt;，比如你有为Deployment的应用创建了一个名为portal的Service在默认的命名空间，那么集群内想要通过Http访问这个应用，就可以使用http://portal.default。这个域名仅在集群内有效，因为是内部的一个DNS负责解析。
+对外提供服务
+说完如何给内部提供服务以后，剩下的就是如何给外部提供服务了。在K8s里把这个叫做Ingress，正如其名，它是集群的入口。比如我们的集群Web应用想要让用户能够访问，那必然要在Ingress入口上增加一条解析记录。这一点，熟悉像Nginx的朋友应该比较容易理解，事实上Nginx Ingress也是K8s生态中的一个成员。
+关于Ingress的使用，在之前我曾写过一篇使用Traefik作为Ingress的文章，我们可以通过Traefik实现为需要暴露的服务提供负载均衡、自动签发Https证书、限流等很多功能，如果有兴趣可以点击查看。"/>
+
+    <meta property="og:title" content="一图说清k8s中几个关键概念" />
+<meta property="og:description" content="k8s中几个关键概念 刚开始接触K8s的同学可能都会觉得有一定的学习难度，扑面而来的各种概念到底是什么。比如，如何提供一个服务给别人，我是应该用Pod还是用Deployment来运行我的应用等，在接下来的文章中，希望能够解答你的这些疑惑。
+Kubernetes可以看做云原生时代的操作系统，统一管理下层的基础设施，如计算资源、网络资源、存储资源等等。将集群中存在的各种复杂关系抽象成各种API资源，以统一的方式暴露出各种接口，也便于未来的扩展以及开发团队根据自己的需要定制。因此，我们可以看到在K8s中Docker仅仅是容器运行时的一个实现而已，只要遵守它的约定，实际上是可以替换为适合的其他容器技术的。基于这样的设计思路，理清各种API对象的作用和关系就变得很重要了，只有理解了才能正确地使用K8s，接下来我们就通过一张关系图一点点的来说明。
+通过Pod终结单容器的蛮荒时代
+在接触K8s之前，大多人首先要接触到的就是Docker。我们得到一个容器的镜像之后，要把应用运行起来最简单的方式就是docker run的命令。然而在实际的生产环境中，很少仅靠一个单容器就能够满足。比如，一个Web前端的应用，可能还得依赖后端的一个容器服务；后端的容器可能需要数据库服务；后端的服务需要多副本等等场景。在这些假想的场景中，比较真实的需求就是这些容器应用需要共享同一个网络栈，同一个存储卷等，还有它们的生命周期如何管理调度。这个时候，仅仅依靠容器无法解决这个问题，我们第一个选手Pod就闪亮登场了。
+Pod 内共享配置
+有了Pod之后，同一个Pod内的容器可以共享很多信息，也可能需要读取同一份配置。比如Pod内有两个容器需要访问同一个数据库，那么我们可以把相关的配置信息写到ConfigMap里。那如果还有一些比较敏感的信息的话，就需要放到Secret对象中，它其实是一个保存在 Etcd 里的键值对数据。这样，你把 Credential 信息以 Secret 的方式存在 Etcd 里，Kubernetes 就会在你指定的 Pod（比如，Web 应用的 Pod）启动时，自动把 Secret 里的数据以 Volume 的方式挂载到容器里。
+图片
+任务和定时任务
+有了Pod之后，事情就变得更清晰了。在集群内，我们可能会有多种形式的要求。比如，我们可能希望一个应用每天固定时间运行或者只允许运行一次，可能希望某个应用以守护进程的方式运行。在K8s里，自然也有方案来解决这些问题。
+首先来看定时任务的需求，假设我的系统内有一个全网信息排行榜展示，要求每天需要在凌晨0点的时候更新一次。这个需求在K8s里就可以用CronJob来搞定。而如果仅仅需要执行一次的任务，那就直接使用Job对象就可以了。
+图片
+默默工作的DaemonSet
+再接下来，可能需要以守护进程的方式运行一个应用。比如，我想要在后台进行日志的收集。这个时候DaemonSet就派上了用场，它会保证在所有的目标节点上运行一个Pod的副本。在这期间，如果有新的Node加入到K8s集群中的话，它也会自动完成调度，在新的机器上运行一个Pod副本。因此，前面说的监控、日志等任务很适合用DaemonSet的方式执行。
+图片
+Deployment管理Pod
+说完DaemonSet，下一个重点Deployment来了。前面说过容器之间的关联关系、共享资源等问题需要处理，从而引入了Pod。对于Pod，也是同样的问题需要解决，只不过高了一个抽象层次罢了。因为面临Pod的生命周期管理、调度、多副本等问题需要解决，聪明的设计者引入了Deployment。它可以根据我们的需求（比如通过标签）将Pod调度到目标机器上，调度完成之后，它还会继续帮我们继续监控容器是否在正确运行，一旦出现问题，会立刻告诉我们Pod的运行不正常以及寻找可能的解决方案，比如目标节点不可用的时候它可以快速地调度到别的机器上去。另外，如果需要对应用扩容提升响应能力的时候，通过Deployment可以快速地进行扩展。
+图片
+在实际的工作中，Deployment并不是直接控制着Pod的，中间实际上还有一个ReplicaSet，但是在这里为了简化理解过程，可以先忽略。
+提供容器服务
+前面的内容主要是围绕着Pod自身的运行调度管理，下面面临的问题是解决如何将服务提供给第三方的问题。
+对内提供服务
+首先要解决的是将服务提供给同一个集群内的其他服务使用。可能刚入门的同学会问为什么我们不能直接使用Pod的IP呢？原因是这样，前面也说过Pod是会被管理调度的，可能被调度到不同的机器上，同时生命周期也可能会发生变化。这导致一个应用的IP可能会随时发生变化，那么直接使用Pod的IP自然是不合理的。
+针对这个问题K8s提供了Service对象来解决。
+图片
+但是，并不是说Service就有一个固定的IP。而且，它和Pod IP还有很不一样的地方。Pod的网络是K8s在物理机上建立了一层Overlay Network实现的，而且在网卡上能够看到这个网络的地址。但是Service是一个完全虚拟的网络层，并不会存在于任何网络设备上。它通过修改集群内部的路由规则，仅对集群内部有效。Deploment创建好应用之后，再为它生成一个Service对象。接下来就可以通过Service的域名访问到服务，形式是&lt;Service Name&gt;.&lt;NameSpace&gt;，比如你有为Deployment的应用创建了一个名为portal的Service在默认的命名空间，那么集群内想要通过Http访问这个应用，就可以使用http://portal.default。这个域名仅在集群内有效，因为是内部的一个DNS负责解析。
+对外提供服务
+说完如何给内部提供服务以后，剩下的就是如何给外部提供服务了。在K8s里把这个叫做Ingress，正如其名，它是集群的入口。比如我们的集群Web应用想要让用户能够访问，那必然要在Ingress入口上增加一条解析记录。这一点，熟悉像Nginx的朋友应该比较容易理解，事实上Nginx Ingress也是K8s生态中的一个成员。
+关于Ingress的使用，在之前我曾写过一篇使用Traefik作为Ingress的文章，我们可以通过Traefik实现为需要暴露的服务提供负载均衡、自动签发Https证书、限流等很多功能，如果有兴趣可以点击查看。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://www.tister.cn/posts/%E4%B8%80%E5%9B%BE%E8%AF%B4%E6%B8%85k8s%E4%B8%AD%E5%87%A0%E4%B8%AA%E5%85%B3%E9%94%AE%E6%A6%82%E5%BF%B5/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-09-18T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-09-18T00:00:00+00:00" />
+
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="http://www.tister.cn"><img class="app-header-avatar" src="/avatar.png" alt="Tister" /></a>
+      <span class="app-header-title">Tister Blog</span>
+      <nav class="app-header-menu">
+          <a class="app-header-menu-item" href="/">Home</a>
+             - 
+          
+          <a class="app-header-menu-item" href="/tags/">Tags</a>
+             - 
+          
+          <a class="app-header-menu-item" href="/about/">About</a>
+      </nav>
+      <p>强哥的自留地&lt;a href=&#39;aa&#39;&gt;aaa&lt;/a&gt;</p>
+      <div class="app-header-social">
+        
+          <a href="https://github.com/tistergit" target="_blank" rel="noreferrer noopener me">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>Github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+          </a>
+        
+          <a href="https://github.com/tistergit" target="_blank" rel="noreferrer noopener me">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>Github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+          </a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">一图说清k8s中几个关键概念</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Sep 18, 2022
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          1 min read
+        </div>
+      </div>
+    </header>
+    <div class="post-content">
+      <h2 id="k8s中几个关键概念">k8s中几个关键概念</h2>
+<p>刚开始接触K8s的同学可能都会觉得有一定的学习难度，扑面而来的各种概念到底是什么。比如，如何提供一个服务给别人，我是应该用Pod还是用Deployment来运行我的应用等，在接下来的文章中，希望能够解答你的这些疑惑。</p>
+<p>Kubernetes可以看做云原生时代的操作系统，统一管理下层的基础设施，如计算资源、网络资源、存储资源等等。将集群中存在的各种复杂关系抽象成各种API资源，以统一的方式暴露出各种接口，也便于未来的扩展以及开发团队根据自己的需要定制。因此，我们可以看到在K8s中Docker仅仅是容器运行时的一个实现而已，只要遵守它的约定，实际上是可以替换为适合的其他容器技术的。基于这样的设计思路，理清各种API对象的作用和关系就变得很重要了，只有理解了才能正确地使用K8s，接下来我们就通过一张关系图一点点的来说明。</p>
+<p>通过Pod终结单容器的蛮荒时代</p>
+<p>在接触K8s之前，大多人首先要接触到的就是Docker。我们得到一个容器的镜像之后，要把应用运行起来最简单的方式就是docker run的命令。然而在实际的生产环境中，很少仅靠一个单容器就能够满足。比如，一个Web前端的应用，可能还得依赖后端的一个容器服务；后端的容器可能需要数据库服务；后端的服务需要多副本等等场景。在这些假想的场景中，比较真实的需求就是这些容器应用需要共享同一个网络栈，同一个存储卷等，还有它们的生命周期如何管理调度。这个时候，仅仅依靠容器无法解决这个问题，我们第一个选手Pod就闪亮登场了。</p>
+<p>Pod 内共享配置</p>
+<p>有了Pod之后，同一个Pod内的容器可以共享很多信息，也可能需要读取同一份配置。比如Pod内有两个容器需要访问同一个数据库，那么我们可以把相关的配置信息写到ConfigMap里。那如果还有一些比较敏感的信息的话，就需要放到Secret对象中，它其实是一个保存在 Etcd 里的键值对数据。这样，你把 Credential 信息以 Secret 的方式存在 Etcd 里，Kubernetes 就会在你指定的 Pod（比如，Web 应用的 Pod）启动时，自动把 Secret 里的数据以 Volume 的方式挂载到容器里。</p>
+<p>图片</p>
+<p>任务和定时任务</p>
+<p>有了Pod之后，事情就变得更清晰了。在集群内，我们可能会有多种形式的要求。比如，我们可能希望一个应用每天固定时间运行或者只允许运行一次，可能希望某个应用以守护进程的方式运行。在K8s里，自然也有方案来解决这些问题。</p>
+<p>首先来看定时任务的需求，假设我的系统内有一个全网信息排行榜展示，要求每天需要在凌晨0点的时候更新一次。这个需求在K8s里就可以用CronJob来搞定。而如果仅仅需要执行一次的任务，那就直接使用Job对象就可以了。</p>
+<p>图片</p>
+<p>默默工作的DaemonSet</p>
+<p>再接下来，可能需要以守护进程的方式运行一个应用。比如，我想要在后台进行日志的收集。这个时候DaemonSet就派上了用场，它会保证在所有的目标节点上运行一个Pod的副本。在这期间，如果有新的Node加入到K8s集群中的话，它也会自动完成调度，在新的机器上运行一个Pod副本。因此，前面说的监控、日志等任务很适合用DaemonSet的方式执行。</p>
+<p>图片</p>
+<p>Deployment管理Pod</p>
+<p>说完DaemonSet，下一个重点Deployment来了。前面说过容器之间的关联关系、共享资源等问题需要处理，从而引入了Pod。对于Pod，也是同样的问题需要解决，只不过高了一个抽象层次罢了。因为面临Pod的生命周期管理、调度、多副本等问题需要解决，聪明的设计者引入了Deployment。它可以根据我们的需求（比如通过标签）将Pod调度到目标机器上，调度完成之后，它还会继续帮我们继续监控容器是否在正确运行，一旦出现问题，会立刻告诉我们Pod的运行不正常以及寻找可能的解决方案，比如目标节点不可用的时候它可以快速地调度到别的机器上去。另外，如果需要对应用扩容提升响应能力的时候，通过Deployment可以快速地进行扩展。</p>
+<p>图片</p>
+<p>在实际的工作中，Deployment并不是直接控制着Pod的，中间实际上还有一个ReplicaSet，但是在这里为了简化理解过程，可以先忽略。</p>
+<p>提供容器服务</p>
+<p>前面的内容主要是围绕着Pod自身的运行调度管理，下面面临的问题是解决如何将服务提供给第三方的问题。</p>
+<p>对内提供服务</p>
+<p>首先要解决的是将服务提供给同一个集群内的其他服务使用。可能刚入门的同学会问为什么我们不能直接使用Pod的IP呢？原因是这样，前面也说过Pod是会被管理调度的，可能被调度到不同的机器上，同时生命周期也可能会发生变化。这导致一个应用的IP可能会随时发生变化，那么直接使用Pod的IP自然是不合理的。</p>
+<p>针对这个问题K8s提供了Service对象来解决。</p>
+<p>图片</p>
+<p>但是，并不是说Service就有一个固定的IP。而且，它和Pod IP还有很不一样的地方。Pod的网络是K8s在物理机上建立了一层Overlay Network实现的，而且在网卡上能够看到这个网络的地址。但是Service是一个完全虚拟的网络层，并不会存在于任何网络设备上。它通过修改集群内部的路由规则，仅对集群内部有效。Deploment创建好应用之后，再为它生成一个Service对象。接下来就可以通过Service的域名访问到服务，形式是<code>&lt;Service Name&gt;.&lt;NameSpace&gt;</code>，比如你有为Deployment的应用创建了一个名为portal的Service在默认的命名空间，那么集群内想要通过Http访问这个应用，就可以使用http://portal.default。这个域名仅在集群内有效，因为是内部的一个DNS负责解析。</p>
+<p>对外提供服务</p>
+<p>说完如何给内部提供服务以后，剩下的就是如何给外部提供服务了。在K8s里把这个叫做Ingress，正如其名，它是集群的入口。比如我们的集群Web应用想要让用户能够访问，那必然要在Ingress入口上增加一条解析记录。这一点，熟悉像Nginx的朋友应该比较容易理解，事实上Nginx Ingress也是K8s生态中的一个成员。</p>
+<p><img src="/images/k8s_arch.png" alt="k8_arch"></p>
+<p>关于Ingress的使用，在之前我曾写过一篇使用Traefik作为Ingress的文章，我们可以通过Traefik实现为需要暴露的服务提供负载均衡、自动签发Https证书、限流等很多功能，如果有兴趣可以点击查看。</p>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

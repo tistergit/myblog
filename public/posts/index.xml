@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Tister Blog</title>
+    <link>http://www.tister.cn/posts/</link>
+    <description>Recent content in Posts on Tister Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <lastBuildDate>Wed, 21 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://www.tister.cn/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>一个Wireguard带多个Client</title>
+      <link>http://www.tister.cn/posts/wireguard_setup/</link>
+      <pubDate>Wed, 21 Dec 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/wireguard_setup/</guid>
+      <description>Install WireGuard via whatever package manager you use. For me, I use apt.
+$ sudo add-apt-repository ppa:wireguard/wireguard $ sudo apt-get update $ sudo apt-get install wireguard MacOS
+$ brew install wireguard-tools Generate key your key pairs. The key pairs are just that, key pairs. They can be generated on any device, as long as you keep the private key on the source and place the public on the destination.
+$ wg genkey | tee privatekey | wg pubkey &amp;gt; publickey example privatekey - mNb7OIIXTdgW4khM7OFlzJ+UPs7lmcWHV7xjPgakMkQ= example publickey - 0qRWfQ2ihXSgzUbmHXQ70xOxDd7sZlgjqGSPA9PFuHg= One can also generate a preshared key to add an additional layer of symmetric-key cryptography to be mixed into the already existing public-key cryptography, for post-quantum resistance.</description>
+    </item>
+    
+    <item>
+      <title>Linux和Win11双启动</title>
+      <link>http://www.tister.cn/posts/grub_and_win11/</link>
+      <pubDate>Sun, 11 Dec 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/grub_and_win11/</guid>
+      <description>查看硬盘分区 sudo fdisk -l You should get a long return that includes something like this:
+Device Start End Sectors Size Type /dev/nvme0n1p1 2048 1050623 1048576 512M EFI System /dev/nvme0n1p2 1050624 874729471 873678848 416.6G Linux filesystem /dev/nvme0n1p3 874729472 874762239 32768 16M Microsoft reserved /dev/nvme0n1p4 874762240 1000214527 125452288 59.8G Microsoft basic data Get the UUID of the EFI partition sudo blkid /dev/nvme0n1p1 (replace nvme0n1p1 with the correct partition for you) Return: dev/nvme0n1p1: UUID=&amp;ldquo;3C26-6A4C&amp;rdquo; BLOCK_SIZE=&amp;ldquo;512&amp;rdquo; TYPE=&amp;ldquo;vfat&amp;rdquo; PARTLABEL=&amp;ldquo;EFI System Partition&amp;rdquo; PARTUUID=&amp;ldquo;3b64b43f-e7eb-4ac8-a32c-9af2edf64d0d&amp;rdquo;</description>
+    </item>
+    
+    <item>
+      <title>Ubuntu下配置Wireguard实现家庭网络与云网络互通</title>
+      <link>http://www.tister.cn/posts/ubuntu_wireguard/</link>
+      <pubDate>Sun, 11 Dec 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/ubuntu_wireguard/</guid>
+      <description>前言：前几天花了1500元左右在PDD DIY了一台电脑，配置如下：双E5 CPU + 128G内存 + geforce gtx 1050显卡，在家玩玩极品飞车感觉很爽。不过如果只用来玩游戏就有点太浪费了，所以在它上面安装了个PVE，用来做云主机，后续搞什么东西就不用在云上买CVM了，现在的问题是，怎么把它连到网上，让外网可访问，之前我一般都是用ssh打隧道，这次尝试一下用WireGuard，感觉比ssh用起来更爽一些。这里记录一下安装过程。
+WireGuard其实是一个Peer To Peer VPN软件，常用网络模型如图
+软件安装 带外网IP的云主机一台，VPC: 10.206.0.4/20 ,使用Ubuntu22.04系统,家里的电脑安装的是pve，内网网段：192.168.1.1/25 ，通过下面的命令安装Wireguard
+sudo apt update &amp;amp;&amp;amp; sudo apt install wireguard 注意 wg-quick工具会改写 wg0.conf 文件，所以在变更配置前，提前使用：wg-quick down wg0 命令，把接口down掉
+wg和wg-quick命令行工具可帮助您配置和管理WireGuard接口，WireGuard接口是虚拟网卡。WireGuard VPN网络中的每个设备都需要具有私钥和公钥。
+我们可以使用wiregurad的工具wg genkey和wg pubkey在/etc/wireguard/目录中生成私钥/etc/wireguard/privatekey和公钥/etc/wireguard/publickey。
+以下命令将使用wg genkey和wg pubkey，tee命令以及管道同时生成私钥和公钥并存储在/etc/wireguard/目录
+wg genkey | sudo tee /etc/wireguard/privatekey | wg pubkey | sudo tee /etc/wireguard/publickey 配置WireGuard服务端 vi /etc/wireguard/wg0.conf 注意Address、PrivateKey和eth0，根据实际情况进行变更
+[Interface] Address = 192.168.100.1/24 ## vpn本地地址 SaveConfig = true ListenPort = 51820 PrivateKey = SERVER_PRIVATE_KEY PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE 接口的命名可以是任何你喜欢的名称，但是建议使用诸如wg0或wgvpn0之类的名称。可以让我们能快速分清是物理接口还是虚拟接口即可。</description>
+    </item>
+    
+    <item>
+      <title>Go语音中优雅处理Json和Gorm</title>
+      <link>http://www.tister.cn/posts/go_json_gorm/</link>
+      <pubDate>Tue, 06 Dec 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/go_json_gorm/</guid>
+      <description>在使用Go开发web项目的过程中, 数据库读写操作与JSON格式的输入输出是两块最基础的模块, Go的标准库已经帮我们做了很多, 熟悉gorm.io/gorm与encoding/json这两个库能帮我们更自在地开发web应用.
+现实情况是，遇到一个时间比较处理的问题，有多个时间字段，有部分格式是：
+{ &amp;#34;instanceId&amp;#34;:&amp;#34;ckafka-8gra88zg&amp;#34;, &amp;#34;deadlineTime&amp;#34;:&amp;#34;2020-11-30T14:20:28.000Z&amp;#34;, &amp;#34;createTime&amp;#34;:&amp;#34;2021-08-02 19:59:23&amp;#34;, &amp;#34;updateTime&amp;#34;:&amp;#34;2021-08-02 19:59:23&amp;#34;, &amp;#34;syncTime&amp;#34;:&amp;#34;&amp;#34;, &amp;#34;deleted&amp;#34;:0 , &amp;#34;instanceCreateTime&amp;#34;:&amp;#34;&amp;#34; } 要把上述Json数据解析后存储到DB中。上面的数据中的日期有三类：
+标准的yyyy-MM-dd HH:mm:ss 格式 syncTime空字符串格式 deadlineTime: RFC 3339 格式 一些预备知识，go语言中，把json字符串转成struct通常使用 json.Unmarshal 这个方法,它的典型用法是： func Unmarshal(data []byte, v interface{}) data : 传入的json字符byte v : 目标struct
+我的做法是，把json和gorm的结构体统一在一直结构体中，既实现Json的解码，也实现与DB的映射。
+type TN1 struct { InstanceId string `json:&amp;#34;instanceId&amp;#34; gorm:&amp;#34;column:instanceId;primaryKey;NOT NULL&amp;#34;` InstanceCreateTime NullTime `json:&amp;#34;instanceCreateTime&amp;#34; gorm:&amp;#34;column:instanceCreateTime&amp;#34;` DeadlineTime NullTime `json:&amp;#34;deadlineTime&amp;#34; gorm:&amp;#34;column:deadlineTime&amp;#34; ` CreateTime NullTime `json:&amp;#34;createTime&amp;#34; gorm:&amp;#34;column:createTime&amp;#34;` UpdateTime NullTime `json:&amp;#34;updateTime&amp;#34; gorm:&amp;#34;column:updateTime&amp;#34;` SyncTime NullTime `json:&amp;#34;syncTime&amp;#34; gorm:&amp;#34;column:syncTime&amp;#34;` Deleted int `json:&amp;#34;deleted&amp;#34; gorm:&amp;#34;column:deleted&amp;#34;` } json.</description>
+    </item>
+    
+    <item>
+      <title>使用VS Code画流程图</title>
+      <link>http://www.tister.cn/posts/vsc_markdown/</link>
+      <pubDate>Thu, 24 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/vsc_markdown/</guid>
+      <description>VS Code插件 1. Markdown All in One 功能强大的 Markdown 插件，支持丰富的 Markdown 语法，对 LaTex 语法也有很好的支持，同时支持快捷键。可以在侧边栏打开预览，你可以在编辑的同时看到渲染之后的 Markdown 效果。
+2. Markdown Preview Enhanced 增强版的 Markdown 预览插件，功能十分强大，几乎支持所有的 Markdown 语法渲染，支持导出为 HTML、PDF、PNG、JPEG、电子书（ePub、mobi、PDF、HTML）、Pandoc 等等格式的文件；
+Markdown Preview Enhanced 使用 KaTeX 或者 MathJax 来渲染数学表达式。
+Markdown Preview Enhanced 内部支持 flow charts, sequence diagrams, mermaid, PlantUML, WaveDrom, GraphViz，Vega &amp;amp; Vega-lite，Ditaa 图像渲染。 你也可以通过使用 Code Chunk 来渲染 TikZ, Python Matplotlib, Plotly 等图像。
+你甚至可以用它做出漂亮的幻灯片，Markdown Preview Enhanced 使用 reveal.js 来渲染漂亮的幻灯片。
+详细功能请移步 官方文档。
+mermaid语法
+时序图 </description>
+    </item>
+    
+    <item>
+      <title>Rancher初探</title>
+      <link>http://www.tister.cn/posts/rancher%E5%88%9D%E6%8E%A2/</link>
+      <pubDate>Wed, 23 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/rancher%E5%88%9D%E6%8E%A2/</guid>
+      <description>Rancher概览 Rancher是一个开源的企业级容器管理平台。通过Rancher，企业再也不必自己使用一系列的开源软件去从头搭建容器服务平台。Rancher提供了在生产环境中使用的管理Docker和Kubernetes的全栈化容器部署与管理平台。
+基础设施编排 Rancher可以使用任何公有云或者私有云的Linux主机资源。Linux主机可以是虚拟机，也可以是物理机。Rancher仅需要主机有CPU，内存，本地磁盘和网络资源。从Rancher的角度来说，一台云厂商提供的云主机和一台自己的物理机是一样的。
+Rancher为运行容器化的应用实现了一层灵活的基础设施服务。Rancher的基础设施服务包括网络， 存储， 负载均衡， DNS和安全模块。Rancher的基础设施服务也是通过容器部署的，所以同样Rancher的基础设施服务可以运行在任何Linux主机上。
+容器编排与调度 很多用户都会选择使用容器编排调度框架来运行容器化应用。Rancher包含了当前全部主流的编排调度引擎，例如Docker Swarm， Kubernetes， 和Mesos。同一个用户可以创建Swarm或者Kubernetes集群。并且可以使用原生的Swarm或者Kubernetes工具管理应用。
+除了Swarm，Kubernetes和Mesos之外，Rancher还支持自己的Cattle容器编排调度引擎。Cattle被广泛用于编排Rancher自己的基础设施服务以及用于Swarm集群，Kubernetes集群和Mesos集群的配置，管理与升级。
+应用商店 Rancher的用户可以在应用商店里一键部署由多个容器组成的应用。用户可以管理这个部署的应用，并且可以在这个应用有新的可用版本时进行自动化的升级。Rancher提供了一个由Rancher社区维护的应用商店，其中包括了一系列的流行应用。Rancher的用户也可以创建自己的私有应用商店。
+企业级权限管理 Rancher支持灵活的插件式的用户认证。支持Active Directory，LDAP， Github等 认证方式。 Rancher支持在环境级别的基于角色的访问控制 (RBAC)，可以通过角色来配置某个用户或者用户组对开发环境或者生产环境的访问权限。
+下图展示了Rancher的主要组件和功能：
+Rancher安装 我选择是在云上搭建一个小Rancher集群来测试，也给大家说一下省钱的小秘密，云上有一种竞价实例的模式，相对正常的预付费模式的云主机要便宜很多，非常适合这种学习性质的临时使用。这次我使用的就是腾讯云上的6台2core/4G的 CVM来进行本次测试。主机信息如下：
+主机名 内部IP 外部IP 功能 rancher_manager 10.206.0.13 xxxx Rancher主控节点 worker1 10.206.0.6 xxx ETCD&amp;amp;Control Plane&amp;amp;Worker worker2 10.206.0.8 xxx ETCD&amp;amp;Control Plane&amp;amp;Worker worker3 10.206.0.11 xxx ETCD&amp;amp;Control Plane&amp;amp;Worker worker4 10.206.0.16 xxx Worker worker5 10.206.0.2 xxx Worker 通过 hostnamectl 变更主机名称，例如：
+sudo hostnamectl hostname --static worker1 特别注意 需要确认 /etc/hosts 文件中，有主机名与内部IP的对应记录，如：</description>
+    </item>
+    
+    <item>
+      <title>vscode本地容器开发篇</title>
+      <link>http://www.tister.cn/posts/vsc_local_container/</link>
+      <pubDate>Mon, 14 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/vsc_local_container/</guid>
+      <description>前言 大家肯定有遇过需要在别的电脑重新安装开发环境，可能搞完半天什么代码都没写，环境还没搞好；又或是项目成员的开发环境设定不一致造成一些莫名其妙的问题
+如果能将开发环境设定纳入版本控管，让后续加入项目的成员可以马上开发，而不用再费心安装开发环境，岂不是很棒！
+VSCode 的Remote - Containers 是基于Docker 运行，下方图示可以看到程式码是通过Volume 挂载到Container，Container Port 映射到本地Port，执行命令、程序运行、Debugger 皆是在Container 中完成。如下图所示：
+容器开发有两种模式：
+基于本地容器的模式(本文描述的方式)
+要求本地安装Docker环境，Docker会把开发使用的镜像Pull到本地来运行，有点类似Python env模式；
+基于远程容器的模式
+Docker也运行于远程开发机上，本地机器通过ssh远程连接到目标开发机的容器中进行开发，有点类似瘦客户端模式，本地只要求安装VSC以及相关插件即可；
+环境准备 客户机：我用的是Mac M1机器，提前安装了Docker Desktop 和 vsc最新版本。vsc需要安装Dev Containers ：容器开发插件。安装方式：快捷键（⇧⌘X）打开扩展面板，搜索Dev Containers，点击安装即可。如下图： 免密钥登录 Mac客户机
+通过下述命令生成密钥对
+$ ssh-keygen // 生成密钥对 $ ssh-copy-id root@xxx.xxx.xxx.xxx Ubuntu服务器(一定要用Root账号) 配置sshd服务，让其可以实现Root用户通过私钥登录，编辑 /etc/ssh/sshd_config 文件，加入：
+PermitRootLogin without-password 注意： 一定要用Root账号才可以，因为Dev Containers插件要通过docker images查看Linux下所有的镜像，这个命令必须是Root账户才能执行，所以这里必须使用Root账号。又由于Ubuntu默认是不允许Root账号远程登录的，这里要多一些步骤才行。
+Ubuntu服务器配置 安装Docker 根据Docker官网上的操作流程安装Docker，这里请注意尽量按这个文档来安装Docker，不要通过apt install docker安装Ubuntu上默认的版本，那个版本可能有问题，造成不必要的麻烦 Ubuntu下安装Docker
+VSC配置 开发镜像制作 开发镜像根据实际开发的开发语言、依赖库不同而各异，建议自己通过编写Dockerfile的方式来制作，当然也可以在网上找别人已经制作好的镜像直接使用，或在此基础上进行更新。
+获取已有镜像： $ docker pull fatindeed/vscode-remote-go $ docker run -d -P --name go-dev --mount type=bind,source=/home/ubuntu/source,target=/app/source fatindeed/vscode-remote-go 通过编写Dockerfile构建一个镜像： 比如开发环境是基于python3和flask框架的一个Web项目，可以通过下述方式生成需要使用的镜像</description>
+    </item>
+    
+    <item>
+      <title>vscode远程容器开发篇</title>
+      <link>http://www.tister.cn/posts/vsc_remote_container/</link>
+      <pubDate>Mon, 14 Nov 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/vsc_remote_container/</guid>
+      <description>前言 大家肯定有遇过需要在别的电脑重新安装开发环境，可能搞完半天什么代码都没写，环境还没搞好；又或是项目成员的开发环境设定不一致造成一些莫名其妙的问题
+如果能将开发环境设定纳入版本控管，让后续加入项目的成员可以马上开发，而不用再费心安装开发环境，岂不是很棒！
+VSCode 的Remote - Containers 是基于Docker 运行，下方图示可以看到程式码是通过Volume 挂载到Container，Container Port 映射到本地Port，执行命令、程序运行、Debugger 皆是在Container 中完成。如下图所示：
+容器开发有两种模式：
+基于本地容器的模式
+要求本地安装Docker环境，Docker会把开发使用的镜像Pull到本地来运行，有点类似Python env模式；
+基于远程容器的模式
+Docker也运行于远程开发机上，本地机器通过ssh远程连接到目标开发机的容器中进行开发，有点类似瘦客户端模式，本地只要求安装VSC以及相关插件即可；
+环境准备 客户机：Mac M1机器 远程开发机：Linux（Ubuntu 22.04）
+机器的容器进行开发，这样对本地机器无其它要求，只要安装基础VSC以及插件即可。其它都在远程Linux机器的上，开发依赖的库文件和配置都在容器中，代码文件通过Docker Volume映射到Linux机器上。
+插件安装 Vscode插件 Vscode扩展中，搜索：Remote Development，它其实是一个Extension Packs,实际包括三个包：Dev Containers, Remote - SSH,WSL 三个。我们本次主要使用前面两个，也可以单独安装前面两个。
+Remote - SSH ：远程开发的基础插件，可以通过ssh连接远程主机进行开发 Dev Containers ：容器开发插件，基于Docker容器 免密钥登录 Mac客户机
+通过下述命令生成密钥对
+$ ssh-keygen // 生成密钥对 $ ssh-copy-id root@xxx.xxx.xxx.xxx Ubuntu服务器(一定要用Root账号) 配置sshd服务，让其可以实现Root用户通过私钥登录，编辑 /etc/ssh/sshd_config 文件，加入：
+PermitRootLogin without-password 注意： 一定要用Root账号才可以，因为Dev Containers插件要通过docker images查看Linux下所有的镜像，这个命令必须是Root账户才能执行，所以这里必须使用Root账号。又由于Ubuntu默认是不允许Root账号远程登录的，这里要多一些步骤才行。
+Ubuntu服务器配置 安装Docker 根据Docker官网上的操作流程安装Docker，这里请注意尽量按这个文档来安装Docker，不要通过apt install docker安装Ubuntu上默认的版本，那个版本可能有问题，造成不必要的麻烦 Ubuntu下安装Docker</description>
+    </item>
+    
+    <item>
+      <title>架构师技能图谱</title>
+      <link>http://www.tister.cn/posts/%E6%9E%B6%E6%9E%84%E5%B8%88%E6%8A%80%E8%83%BD%E5%9B%BE%E8%B0%B1/</link>
+      <pubDate>Mon, 24 Oct 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/%E6%9E%B6%E6%9E%84%E5%B8%88%E6%8A%80%E8%83%BD%E5%9B%BE%E8%B0%B1/</guid>
+      <description>系统架构能力 基本理论 扩展性设计
+架构易于扩展是其非常重要的一个特性，好的架构需要有非常强的扩展能力，架构中的每个角色都需要有standby，好的架构可以满足业务飞速发展的需要，传说中QQ的架构好多年都没有大变，满足了用户从百万、千万、亿级的发展需要。我自己写的AcMid和reviewTask工程就是具备多机多进程的消费模型，通过队列进行生产者与消费者的解耦，也是可以无限添加机器与进程的架构。
+可用性设计
+好的架构都是非常注重可用性的，好的架构可以极大的提高系统的可用性。好的架构是一整套方案，所以可用性是非常高的。
+可靠性设计
+用于定义组件或系统可靠性的一个度量标准是平均故障间隔时间 (MTBF)。MTBF 是平均间隔时间。好的架构需要易监控、会有全套的业务日志打出，这样整个系统会比较定位问题，而且容灾完全可以让架构更可靠。
+致性设计
+在海量服务的时代，单台机器是Hold不住的，所以我们的系统都是分布式的系统，一致性就是特指的数据一致性，也就是存储一致性。一致性有时候没有那么严格，海量服务时代大部分的需求实现最终一致性就行了。CAP定理告诉我们三者不能兼得，P是必须要保证的，所以只能牺牲一定的C来保证A。
+负载均衡设计
+负载均衡是架构设计中非常重要的一环，就如上面提到的，海量服务之道与分布式架构是捆绑在一起的，既然是分布式的，就不然存在非常多的机器来协同工作，如果平衡各个模块的负载就非常的重要，希望流量可以均衡的分配在下游的模块中（需要考虑到下游模块的负载），负载均衡的方法有很多，我个人觉得L5的设计师非常的赞的，几年前就预感其会普遍流行起来的。
+过载保护设计
+好的架构不是提供尽力而为的服务，而是提供量力而为的服务。好的架构一定有一个容量与负载边界，超过这个边界后系统开始出现问题，有的架构在此时会产生雪崩，服务完全不可用。过载保护就像是给系统加一个保险，始终将服务的量级控制在自己的能力之内。我们目前的架构不具备过载保护，所以动漫目前的架构不是一个好的架构。
+灾难恢复与备份
+容灾是架构最开始就需要考虑的一个点，架构不允许出现单点的情况。目前很多的海量系统都设计为多地部署，所以灾难恢复不是什么难题，最要紧的部分就是存储，网上经常爆出程序员离职后格式化数据库，那么存储组件的备份一定要做好，每天都需要备份，然后线上也需要存储多个副本。
+协议设计 文本协议
+如果是http服务的话，文本协议比较好。http+json是非常多服务的标配，文本协议具备简单、可读性高等特性。文本协议在配置方面也应用广泛。
+二进制协议
+二进制协议体积小、效率高，在数据传输方面有极大的优势，所以是数据传输格式的首选，不过因为二进制协议可读性不高，所以还需要配套使用一些解析工具。
+接入层架构设计 DNS轮询
+目前DNS轮询是接入层采用的比较多的一种方式了，不过DNS轮询比较大的问题是的配置存在ttl。
+动静态分离
+快慢分离、动静分离是好的架构需要具备的特性。动态请求与静态请求分开处理，静态请求是十分适合CDN的，分发至离用户更近的OC节点，可以为用户提供更好的服务。不过貌似目前动态请求也可以放在CDN了，该动态值得关注。
+静态化
+静态化的并发肯定比动态请求更高</description>
+    </item>
+    
+    <item>
+      <title>Ansible增加用户和免密码登录</title>
+      <link>http://www.tister.cn/posts/ansible/</link>
+      <pubDate>Thu, 20 Oct 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/ansible/</guid>
+      <description>Ansible增加用户和免密码登录 Playbook文件 - hosts: all remote_user: ubuntu ## 是否通过sudo 执行,如果sudo 需要密码，可以通过在命令行加 -K 来输入 become: yes # vars_files: # - vault-foo.yml tasks: - name: Add User curve ansible.builtin.user: name: curve comment: curve user #group: admin - name: Set authorized key token from file authorized_key: user: curve state: present key: &amp;#34;{{ lookup(&amp;#39;file&amp;#39;,&amp;#39;~/.ssh/id_rsa.pub&amp;#39;) }}&amp;#34; - name: Add user curve to sudo lineinfile: path: /etc/sudoers.d/curve line: &amp;#39;curve ALL=(ALL) NOPASSWD: ALL&amp;#39; state: present mode: 0400 create: yes validate: &amp;#39;visudo -cf %s&amp;#39; Host文件 192.</description>
+    </item>
+    
+    <item>
+      <title>Kubernetes集群搭建</title>
+      <link>http://www.tister.cn/posts/k8s_install/</link>
+      <pubDate>Mon, 19 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/k8s_install/</guid>
+      <description>Kubernetes示意图 组件说明 控制面 组件名 功能 kube-apiserver API请求 kube-controller-manager 资源编排 etcd 集群数据存储 kube-scheduler 节点调度 Node组件 组件名 功能 kubelet xxx kube-proxy xx 开放接口 CRI（Container Runtime Interface）：容器运行时接口，提供计算资源 CNI（Container Network Interface）：容器网络接口，提供网络资源 CSI（Container Storage Interface）：容器存储接口，提供存储资源 系统准备 # 允许 iptables 检查桥接流量 sudo tee /etc/modules-load.d/containerd.conf &amp;lt;&amp;lt; EOF overlay br_netfilter EOF sudo tee /etc/sysctl.d/k8s.conf &amp;lt;&amp;lt; EOF net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 net.ipv4.ip_forward = 1 EOF # 使设置生效 sudo modprobe overlay sudo modprobe br_netfilter sudo sysctl --system # 禁用虚拟内存 sudo swapoff -a # 永久禁用虚拟内存，需要注释 /etc/fstab 中的下述行 # /swap.</description>
+    </item>
+    
+    <item>
+      <title>Ubuntu_network</title>
+      <link>http://www.tister.cn/posts/ubuntu_network/</link>
+      <pubDate>Mon, 19 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/ubuntu_network/</guid>
+      <description>Ubuntu下变更Mac /etc/network/interfaces
+auto wlan0 iface wlan0 inet dhcp hwaddress ether 9E:61:97:50:6E:04 Ubuntu配置固定IP network: version: 2 renderer: networkd ethernets: eth0: addresses: - 192.168.1.212/24 nameservers: addresses: [8.8.8.8, 8.8.4.4] routes: - to: default via: 192.168.1.2 Ubuntu配置WIFI 记得提前安装 wpasupplicant 包
+sudo apt install wpasupplicant 配置文件如下，比如：/etc/netplan/00-installer-config.yaml
+network: version: 2 renderer: NetworkManager wifis: wlan0: dhcp4: no addresses: - 192.168.1.250/24 gateway4: 192.168.1.1 nameservers: addresses: - 192.168.1.1 - 114.114.114.114 optional: true access-points: &amp;#34;26-1-3006&amp;#34;: password: &amp;#34;xxxx&amp;#34; access-points: &amp;#34;HUAWEI_1B301&amp;#34;: password: &amp;#34;xxxx&amp;#34; $sudo netplan apply </description>
+    </item>
+    
+    <item>
+      <title>Cobra Viper学习</title>
+      <link>http://www.tister.cn/posts/cobra_viper/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/cobra_viper/</guid>
+      <description>什么是Cobra Cobra 是 Go 的 CLI 框架。它包含一个用于创建功能强大的现代 CLI 应用程序的库，以及一个用于快速生成基于 Cobra 的应用程序和命令文件的工具。 Cobra 由 Go 项目成员和 hugo 作者 spf13 创建，已经被许多流行的 Go 项目采用，比如 GitHub CLI 和 Docker CLI。
+什么是Viper Viper是适用于Go应用程序的完整配置解决方案。它被设计用于在应用程序中工作，并且可以处理所有类型的配置需求和格式。</description>
+    </item>
+    
+    <item>
+      <title>jsonrpc调用示例</title>
+      <link>http://www.tister.cn/posts/jsonrpc/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/jsonrpc/</guid>
+      <description>说明 很多平台使用jsonrpc作为接口的协议，但大家都不是太标准，这里记录一下通过不同语言jsonrpc的实现方式
+Python版本 import json import requests def rpc_call(url, args): r=requests.post(url,json=args,headers={&amp;#39;Content-Type&amp;#39;: &amp;#39;application/json&amp;#39;}) print(r.text) if __name__ == &amp;#34;__main__&amp;#34;: print(&amp;#34;start&amp;#34;) url = &amp;#34;http://site.url&amp;#34; args = {&amp;#39;currentDate&amp;#39;: &amp;#34;2022-09-13&amp;#34;, &amp;#39;username&amp;#39;: &amp;#34;xxx&amp;#34;,&amp;#39;password&amp;#39;:&amp;#34;xxxx&amp;#34;} rpc_call(url,args) print(&amp;#34;end&amp;#34;) golang package main import ( &amp;#34;bytes&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;io/ioutil&amp;#34; &amp;#34;net/http&amp;#34; ) func main() { posturl := &amp;#34;http://site.url&amp;#34; fmt.Println(&amp;#34;HTTP JSON POST URL:&amp;#34;, posturl) var jsonData = []byte(`{ &amp;#34;currentDate&amp;#34;: &amp;#34;2022-09-13&amp;#34;, &amp;#34;username&amp;#34;: &amp;#34;xxxx&amp;#34;, &amp;#34;password&amp;#34;:&amp;#34;xxxx&amp;#34;} }`) // request, error := http.NewRequest(&amp;#34;POST&amp;#34;, posturl, bytes.NewBuffer(jsonData)) response, err := http.</description>
+    </item>
+    
+    <item>
+      <title>Nginx &#43; Ceph作为CDN源站存储方案</title>
+      <link>http://www.tister.cn/posts/nginx-&#43;-ceph%E4%BD%9C%E4%B8%BAcdn%E6%BA%90%E7%AB%99%E5%AD%98%E5%82%A8%E6%96%B9%E6%A1%88/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/nginx-&#43;-ceph%E4%BD%9C%E4%B8%BAcdn%E6%BA%90%E7%AB%99%E5%AD%98%E5%82%A8%E6%96%B9%E6%A1%88/</guid>
+      <description>Nginx + Ceph作为CDN源站存储方案 旧架构 源站存储采用3~4台TS类机器，单机硬盘有限，扩容不方便，虽然采用链式回源的方式，新资源可以向二级、三级这样逐级添加，但会造成回源链路过长，且旧数据会经过所有存储层，带宽消耗大。2、当回源带宽突然增长时，基本无法扩容。3、同一资源重复存储了3~4份，机器利用率低。
+新架构 采用Ceph集群统一存储文件，当存储容量不足时，可非常方便增加存储的机器。2、Ceph每个文件只存储2份（后续可以考虑1.33份），存储机器利用率高。3、引入了Cache节点，针对热点回源可以命中Cache，减少突发大量回源对Ceph集群的请求量。4、Ceph接入采用Master、Slave两台同时活跃的方式，既可防止单点问题，又可分担流量。
+Nginx Cache配置说明 通用配置项目 user mqq mqq; worker_processes 11; worker_cpu_affinity auto; pid logs/nginx.pid; events { worker_connections 10240; } worker_processes 这个参数，为什么用11，不用auto ，绑定24个CPU。考虑这个是Cache机器，只有11块ssd硬盘，这个值设置太高，硬盘IO太高，作用不大。
+Cache Path配置 sendfile on; keepalive_timeout 65; proxy_cache_path /data1/nginx_cache levels=1:2 keys_zone=my-cache1:10m max_size=230G inactive=1d; proxy_cache_path /data2/nginx_cache levels=1:2 keys_zone=my-cache2:10m max_size=230G inactive=1d; proxy_cache_path /data3/nginx_cache levels=1:2 keys_zone=my-cache3:10m max_size=230G inactive=1d; proxy_cache_path /data4/nginx_cache levels=1:2 keys_zone=my-cache4:10m max_size=230G inactive=1d; proxy_cache_path /data5/nginx_cache levels=1:2 keys_zone=my-cache5:10m max_size=230G inactive=1d; proxy_cache_path /data6/nginx_cache levels=1:2 keys_zone=my-cache6:10m max_size=230G inactive=1d; proxy_cache_path /data7/nginx_cache levels=1:2 keys_zone=my-cache7:10m max_size=230G inactive=1d; proxy_cache_path /data8/nginx_cache levels=1:2 keys_zone=my-cache8:10m max_size=230G inactive=1d; proxy_cache_path /data9/nginx_cache levels=1:2 keys_zone=my-cache9:10m max_size=230G inactive=1d; proxy_cache_path /data10/nginx_cache levels=1:2 keys_zone=my-cache10:10m max_size=230G inactive=1d; #proxy_cache_path /data11/nginx_cache levels=1:2 keys_zone=my-cache11:10m max_size=230G inactive=1d use_temp_path=off; sendfile on, 避免了内核层与用户层的上线文切换。作为Cache用，有大量的文件读、写操作，当然打开。 proxy_cache_path 说明： /data1/nginx_cache Cache： 使用的硬盘，我们使用的是TS8-10G的机型，有11块SSD硬盘，这里不建议在OS层作软Raid,有性能损耗，且坏一块硬盘，所有的Cache数据全部失效；建议的方式是在Nginx的Cache这里配置多块硬盘。 levels=1:2 ： Nginx Cache缓存文件的存储方式，内部规则如下图所示：</description>
+    </item>
+    
+    <item>
+      <title>Pandas日常使用技巧</title>
+      <link>http://www.tister.cn/posts/pandas%E6%97%A5%E5%B8%B8%E4%BD%BF%E7%94%A8%E6%8A%80%E5%B7%A7/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/pandas%E6%97%A5%E5%B8%B8%E4%BD%BF%E7%94%A8%E6%8A%80%E5%B7%A7/</guid>
+      <description>Pandas日常使用技巧 Pandas与sqlalchemy结合 from sqlalchemy.engine import create_engine from sqlalchemy.orm.session import sessionmaker import pandas as pd SQLALCHEMY_DATABASE_URI = &amp;#34;mysql+pymysql://user:password@host/database&amp;#34; engine = create_engine(SQLALCHEMY_DATABASE_URI) DBSession = sessionmaker(bind=engine) df = pd.read_sql(&amp;#34; select * from t_tickets where created_time &amp;gt;= &amp;#39;2017-12-1&amp;#39; and created_time &amp;lt;= &amp;#39;2017-12-31&amp;#39; &amp;#34;, engine) 循环Dataframe for index, row in df.iterrows(): que_extend = row[&amp;#39;que_extend&amp;#39;] que_id = row[&amp;#39;id&amp;#39;] 在pandas中查询结果，使用sqlalchemy更新数据 SQLALCHEMY_DATABASE_URI = &amp;#34;mysql+pymysql://user:password@host/database&amp;#34; engine = create_engine(SQLALCHEMY_DATABASE_URI) DBSession = sessionmaker(bind=engine) def batch_update(df , cr): session = DBSession() for index, row in df.</description>
+    </item>
+    
+    <item>
+      <title>SRE工作手册读书笔记</title>
+      <link>http://www.tister.cn/posts/sre_workbook/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/sre_workbook/</guid>
+      <description>什么是SRE？ 很多人认为就是Google的一个具备全栈能力的岗位，可以独立解决很多问题的人。
+而在深入探究之后发现，SRE确实可以解决很多问题，但问题实在太多了，一个岗位或一个人是很难高效快速的解决的。
+比如怎么做容量评估、怎么进行故障演练、怎么能做到服务限流、怎么做到异常熔断、怎么让监控告警更有效等
+所以为了解决这些问题，不难看出需要测试、开发、运维以及其他相关岗位人员都得进行合作建设，所以会发现其实可以认为SRE是一套指导建设的体系化方法。
+SRE的目标是什么？ 提高稳定性 建设SRE体系的目标是“提高稳定性”
+而在SRE中对“提高稳定性”这一目标有着两个衡量的指标
+指标 释义 MTBF（Mean Time Between Failure） 平均故障时间 MTTR（Mean Time To Repair） 故障平均修复时间 从他们的释义中可以看出两个指标与系统运行状态关系对应如下 指标 系统运行状态 MTBF 系统正常运行时 MTTR 系统故障时 其实我们对系统稳定性认识就是让系统正常运行状态长时间维持下去，当出现故障时可以快速处理恢复。 所以提升MTBF，降低MTTR就成为了“提高稳定性”的目标
+这让我们在建设SRE做相关工作时，可以依据是否提升MTBF，降低MTTR去判断工作的有效性
+细分目标 有了这个目标之后，问题就来了，MTBF和MTTR两个指标是不是有点太大了，即使可以通过告警、通知或其他手段梳理出其两个指标的时间数据，也不清楚如何具体落实改进阿。
+其实MTTR还可以细分4个指标，分别对应系统故障中四个阶段，具体如下
+指标 释义 阶段 MTTI（Mean Time To Identify） 平均故障发现时间 故障发现：故障发生到响应 MTTK（Mean Time To Know） 平均故障认知时间 故障定位：根因或是根因范围定位出来为止 MTTF（Mean Time To Fix） 平均故障解决时间 故障恢复：采取措施恢复业务 MTTV（Mean Time To Verify） 平均故障修复验证时间 故障恢复验证：故障解决后验证业务恢复 所用时间 而MTBF也可以细分2个阶段，如下: 阶段 释义 &amp;mdash; &amp;mdash; Pre-MTBF 故障预防 Post-MTBF 故障改进 所以有了具体的阶段分割，我们就可以针对着去做工作，比如参考至赵成老师的SRE稳定性保证规划图如下</description>
+    </item>
+    
+    <item>
+      <title>TCP三次握手与四次挥手</title>
+      <link>http://www.tister.cn/posts/tcp%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B%E4%B8%8E%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/tcp%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B%E4%B8%8E%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/</guid>
+      <description>TCP三次握手 TCP服务器进程先创建传输控制块TCB，时刻准备接受客户进程的连接请求，此时服务器就进入了LISTEN（监听）状态； TCP客户进程也是先创建传输控制块TCB，然后向服务器发出连接请求报文，这是报文首部中的同部位SYN=1，同时选择一个初始序列号 seq=x ，此时，TCP客户端进程进入了 SYN-SENT（同步已发送状态）状态。TCP规定，SYN报文段（SYN=1的报文段）不能携带数据，但需要消耗掉一个序号。 TCP服务器收到请求报文后，如果同意连接，则发出确认报文。确认报文中应该 ACK=1，SYN=1，确认号是ack=x+1，同时也要为自己初始化一个序列号 seq=y，此时，TCP服务器进程进入了SYN-RCVD（同步收到）状态。这个报文也不能携带数据，但是同样要消耗一个序号。 TCP客户进程收到确认后，还要向服务器给出确认。确认报文的ACK=1，ack=y+1，自己的序列号seq=x+1，此时，TCP连接建立，客户端进入ESTABLISHED（已建立连接）状态。TCP规定，ACK报文段可以携带数据，但是如果不携带数据则不消耗序号。 当服务器收到客户端的确认后也进入ESTABLISHED状态，此后双方就可以开始通信了。 TCP四次挥手 客户端进程发出连接释放报文，并且停止发送数据。释放数据报文首部，FIN=1，其序列号为seq=u（等于前面已经传送过来的数据的最后一个字节的序号加1），此时，客户端进入FIN-WAIT-1（终止等待1）状态。 TCP规定，FIN报文段即使不携带数据，也要消耗一个序号。 服务器收到连接释放报文，发出确认报文，ACK=1，ack=u+1，并且带上自己的序列号seq=v，此时，服务端就进入了CLOSE-WAIT（关闭等待）状态。TCP服务器通知高层的应用进程，客户端向服务器的方向就释放了，这时候处于半关闭状态，即客户端已经没有数据要发送了，但是服务器若发送数据，客户端依然要接受。这个状态还要持续一段时间，也就是整个CLOSE-WAIT状态持续的时间。 客户端收到服务器的确认请求后，此时，客户端就进入FIN-WAIT-2（终止等待2）状态，等待服务器发送连接释放报文（在这之前还需要接受服务器发送的最后的数据）。 服务器将最后的数据发送完毕后，就向客户端发送连接释放报文，FIN=1，ack=u+1，由于在半关闭状态，服务器很可能又发送了一些数据，假定此时的序列号为seq=w，此时，服务器就进入了LAST-ACK（最后确认）状态，等待客户端的确认。 客户端收到服务器的连接释放报文后，必须发出确认，ACK=1，ack=w+1，而自己的序列号是seq=u+1，此时，客户端就进入了TIME-WAIT（时间等待）状态。注意此时TCP连接还没有释放，必须经过2∗ *∗MSL（最长报文段寿命）的时间后，当客户端撤销相应的TCB后，才进入CLOSED状态。 服务器只要收到了客户端发出的确认，立即进入CLOSED状态。同样，撤销TCB后，就结束了这次的TCP连接。可以看到，服务器结束TCP连接的时间要比客户端早一些。 </description>
+    </item>
+    
+    <item>
+      <title>Terraform导入云资源</title>
+      <link>http://www.tister.cn/posts/terraform%E5%AF%BC%E5%85%A5%E4%BA%91%E8%B5%84%E6%BA%90/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/terraform%E5%AF%BC%E5%85%A5%E4%BA%91%E8%B5%84%E6%BA%90/</guid>
+      <description>Terraform安装 Mac 下通过Brew安装Terraform非常简单
+brew install terraform terraform --version 准备tf配置文件 ## 云CVM实例 resource &amp;#34;tencentcloud_instance&amp;#34; &amp;#34;myinstance&amp;#34; { } ## Ckafka实例 resource &amp;#34;tencentcloud_ckafka_instance&amp;#34; &amp;#34;foo&amp;#34; { } provider &amp;#34;tencentcloud&amp;#34; { ### Qcloud访问的Id和Key secret_id = &amp;#34;xxxx&amp;#34; secret_key = &amp;#34;xxxx&amp;#34; region = var.region ## 可选 domain = &amp;#34;internal.tencentcloudapi.com&amp;#34; } variable &amp;#34;region&amp;#34; { type = string default = &amp;#34;ap-guangzhou&amp;#34; } terraform { required_providers { tencentcloud = { source = &amp;#34;registry.terraform.io/tencentcloudstack/tencentcloud&amp;#34; version = &amp;#34;&amp;gt;=1.61.5&amp;#34; } } } 获取云资源信息 首先进行初始化</description>
+    </item>
+    
+    <item>
+      <title>一图说清k8s中几个关键概念</title>
+      <link>http://www.tister.cn/posts/%E4%B8%80%E5%9B%BE%E8%AF%B4%E6%B8%85k8s%E4%B8%AD%E5%87%A0%E4%B8%AA%E5%85%B3%E9%94%AE%E6%A6%82%E5%BF%B5/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/%E4%B8%80%E5%9B%BE%E8%AF%B4%E6%B8%85k8s%E4%B8%AD%E5%87%A0%E4%B8%AA%E5%85%B3%E9%94%AE%E6%A6%82%E5%BF%B5/</guid>
+      <description>k8s中几个关键概念 刚开始接触K8s的同学可能都会觉得有一定的学习难度，扑面而来的各种概念到底是什么。比如，如何提供一个服务给别人，我是应该用Pod还是用Deployment来运行我的应用等，在接下来的文章中，希望能够解答你的这些疑惑。
+Kubernetes可以看做云原生时代的操作系统，统一管理下层的基础设施，如计算资源、网络资源、存储资源等等。将集群中存在的各种复杂关系抽象成各种API资源，以统一的方式暴露出各种接口，也便于未来的扩展以及开发团队根据自己的需要定制。因此，我们可以看到在K8s中Docker仅仅是容器运行时的一个实现而已，只要遵守它的约定，实际上是可以替换为适合的其他容器技术的。基于这样的设计思路，理清各种API对象的作用和关系就变得很重要了，只有理解了才能正确地使用K8s，接下来我们就通过一张关系图一点点的来说明。
+通过Pod终结单容器的蛮荒时代
+在接触K8s之前，大多人首先要接触到的就是Docker。我们得到一个容器的镜像之后，要把应用运行起来最简单的方式就是docker run的命令。然而在实际的生产环境中，很少仅靠一个单容器就能够满足。比如，一个Web前端的应用，可能还得依赖后端的一个容器服务；后端的容器可能需要数据库服务；后端的服务需要多副本等等场景。在这些假想的场景中，比较真实的需求就是这些容器应用需要共享同一个网络栈，同一个存储卷等，还有它们的生命周期如何管理调度。这个时候，仅仅依靠容器无法解决这个问题，我们第一个选手Pod就闪亮登场了。
+Pod 内共享配置
+有了Pod之后，同一个Pod内的容器可以共享很多信息，也可能需要读取同一份配置。比如Pod内有两个容器需要访问同一个数据库，那么我们可以把相关的配置信息写到ConfigMap里。那如果还有一些比较敏感的信息的话，就需要放到Secret对象中，它其实是一个保存在 Etcd 里的键值对数据。这样，你把 Credential 信息以 Secret 的方式存在 Etcd 里，Kubernetes 就会在你指定的 Pod（比如，Web 应用的 Pod）启动时，自动把 Secret 里的数据以 Volume 的方式挂载到容器里。
+图片
+任务和定时任务
+有了Pod之后，事情就变得更清晰了。在集群内，我们可能会有多种形式的要求。比如，我们可能希望一个应用每天固定时间运行或者只允许运行一次，可能希望某个应用以守护进程的方式运行。在K8s里，自然也有方案来解决这些问题。
+首先来看定时任务的需求，假设我的系统内有一个全网信息排行榜展示，要求每天需要在凌晨0点的时候更新一次。这个需求在K8s里就可以用CronJob来搞定。而如果仅仅需要执行一次的任务，那就直接使用Job对象就可以了。
+图片
+默默工作的DaemonSet
+再接下来，可能需要以守护进程的方式运行一个应用。比如，我想要在后台进行日志的收集。这个时候DaemonSet就派上了用场，它会保证在所有的目标节点上运行一个Pod的副本。在这期间，如果有新的Node加入到K8s集群中的话，它也会自动完成调度，在新的机器上运行一个Pod副本。因此，前面说的监控、日志等任务很适合用DaemonSet的方式执行。
+图片
+Deployment管理Pod
+说完DaemonSet，下一个重点Deployment来了。前面说过容器之间的关联关系、共享资源等问题需要处理，从而引入了Pod。对于Pod，也是同样的问题需要解决，只不过高了一个抽象层次罢了。因为面临Pod的生命周期管理、调度、多副本等问题需要解决，聪明的设计者引入了Deployment。它可以根据我们的需求（比如通过标签）将Pod调度到目标机器上，调度完成之后，它还会继续帮我们继续监控容器是否在正确运行，一旦出现问题，会立刻告诉我们Pod的运行不正常以及寻找可能的解决方案，比如目标节点不可用的时候它可以快速地调度到别的机器上去。另外，如果需要对应用扩容提升响应能力的时候，通过Deployment可以快速地进行扩展。
+图片
+在实际的工作中，Deployment并不是直接控制着Pod的，中间实际上还有一个ReplicaSet，但是在这里为了简化理解过程，可以先忽略。
+提供容器服务
+前面的内容主要是围绕着Pod自身的运行调度管理，下面面临的问题是解决如何将服务提供给第三方的问题。
+对内提供服务
+首先要解决的是将服务提供给同一个集群内的其他服务使用。可能刚入门的同学会问为什么我们不能直接使用Pod的IP呢？原因是这样，前面也说过Pod是会被管理调度的，可能被调度到不同的机器上，同时生命周期也可能会发生变化。这导致一个应用的IP可能会随时发生变化，那么直接使用Pod的IP自然是不合理的。
+针对这个问题K8s提供了Service对象来解决。
+图片
+但是，并不是说Service就有一个固定的IP。而且，它和Pod IP还有很不一样的地方。Pod的网络是K8s在物理机上建立了一层Overlay Network实现的，而且在网卡上能够看到这个网络的地址。但是Service是一个完全虚拟的网络层，并不会存在于任何网络设备上。它通过修改集群内部的路由规则，仅对集群内部有效。Deploment创建好应用之后，再为它生成一个Service对象。接下来就可以通过Service的域名访问到服务，形式是&amp;lt;Service Name&amp;gt;.&amp;lt;NameSpace&amp;gt;，比如你有为Deployment的应用创建了一个名为portal的Service在默认的命名空间，那么集群内想要通过Http访问这个应用，就可以使用http://portal.default。这个域名仅在集群内有效，因为是内部的一个DNS负责解析。
+对外提供服务
+说完如何给内部提供服务以后，剩下的就是如何给外部提供服务了。在K8s里把这个叫做Ingress，正如其名，它是集群的入口。比如我们的集群Web应用想要让用户能够访问，那必然要在Ingress入口上增加一条解析记录。这一点，熟悉像Nginx的朋友应该比较容易理解，事实上Nginx Ingress也是K8s生态中的一个成员。
+关于Ingress的使用，在之前我曾写过一篇使用Traefik作为Ingress的文章，我们可以通过Traefik实现为需要暴露的服务提供负载均衡、自动签发Https证书、限流等很多功能，如果有兴趣可以点击查看。</description>
+    </item>
+    
+    <item>
+      <title>使用ssh远程控制家里的电脑</title>
+      <link>http://www.tister.cn/posts/%E4%BD%BF%E7%94%A8ssh%E8%BF%9C%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%AE%B6%E9%87%8C%E7%9A%84%E7%94%B5%E8%84%91/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/%E4%BD%BF%E7%94%A8ssh%E8%BF%9C%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%AE%B6%E9%87%8C%E7%9A%84%E7%94%B5%E8%84%91/</guid>
+      <description>使用ssh远程控制家里的电脑 背景 家里有1台N年前的笔记本，给二手收也没几个钱，装了个Linux系统放在那里，偶尔周末玩一下。同时也购买了1台最小化的云主机，腾讯云新出的AMD CPU云主机，非常合算，在搞活动的时候一下买了4年。接下来告诉大家怎么通过云主机转发控制家里这台旧笔记本。 主角当然是ssh，通过它的远程端口转发，把云主机的2222端口转发到家里笔记本的22端口上，这样就可以在任意其它可上网的地方，远程访问到家里这台机器了。远程转发命令非常简单，如下：ssh -R 2222:localhost:22 root@www.tister.cn，这个命令会在www.tister.cn 这台云主机上开一个2222端口，转发到家里的笔记本的22端口上。问题是这个通道不是一直用，中间网络超时或断开的时候，这个转发通道就断了，不能重连。这里需要另外一个工具：autossh，它会侦测转发通道是否断开，如果断开就重连，保证了转发通道一直可用。下面说一下配置步骤：
+安装autossh yum -y install autossh 配置ssh免密码登录 首先通过ssh-keygen生成一个ssh公钥，之后利用ssh-copy-id命令把公钥拷贝到云主机上。
+ssh-copy-id root@www.tister.cn 拷贝成功后，使用ssh root@www.tister.cn 测试一下是否可以免密码登录。
+写一个systemd的开机自启动脚本 使用vim建立和编辑 /etc/systemd/system/remote-autossh.service 文件，内容如下：
+[Unit] Description=AutoSSH service for remote tunnel After=network-online.target [Service] User=root ExecStart=/usr/bin/autossh -M 20001 -N -o &amp;#34;PubkeyAuthentication=yes&amp;#34; -o &amp;#34;StrictHostKeyChecking=false&amp;#34; -o &amp;#34;ServerAliveInterval 60&amp;#34; -o &amp;#34;ServerAliveCountMax 3&amp;#34; -R 2222:localhost:22 root@www.tister.cn [Install] WantedBy=multi-user.target 配置开机自启动 systemctl daemon-reload systemctl enable remote-autossh.service systemctl start remote-autossh.service 验证 登录云主机，通过netstat -lnt 查看2222端口是不是存在。可以通过 ssh root@localhost -p 2222 ,输出家里笔记本的root密码，就可以登录家里的主机了。</description>
+    </item>
+    
+    <item>
+      <title>斐讯N1折腾记</title>
+      <link>http://www.tister.cn/posts/%E6%96%90%E8%AE%AFn1%E6%8A%98%E8%85%BE%E8%AE%B0/</link>
+      <pubDate>Sun, 18 Sep 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/%E6%96%90%E8%AE%AFn1%E6%8A%98%E8%85%BE%E8%AE%B0/</guid>
+      <description>开篇 从PDD上掏了几个斐讯N1，最初是做为电视盒子来使用的，100以内的价格，使用起来也挺不错的，后来看到网上好多人用它刷Openwrt作旁路由，后来又看到有人用它安装Linux系统，喜欢折腾的我怎么可能不试试呢。
+关于盒子降级 貌似我收到的几个盒子都无需降级，可能从PDD上淘过来的，已经被降级过了
+Openwrt刷回Armbian 直接用安装了Armbian的U盘启动是不行的，需要把Openwrt刷回Android系统，再通过Android刷Armbian。
+刷Android 请注意按如下顺序：
+先把双头Usb线接好（一头接电脑Usb口，另一头接N1靠近HDMI口的Usb口 打开N1刷机软件（USB_Burning_Tool)，加载镜像 把默认选中的[擦除flash]和[擦除bootloader]两个选项勾选掉，意思是：不要选中这两个选项 点击[开始]按钮 给N1通电，刷机会自动开始，过程不要中断，待刷机100%完成即可 点击[停止]按钮，断开Usb和电源连接线，刷机即完成 刷Armbian 下载N1版本的Armbian，下载链接,请注意，N1选择s905d的版本 解压下载的gz文件，使用Rufus把镜像写到U盘中 把U盘插入N1靠近HDMI旁边的USB口 给N1通电，它会默认进入Android系统 在路由器上找一下盒子通过DHCP获取的IP地址，记下这个IP 通过Android的ADB（在platform-tools工具包中）连接N1盒子，执行如下命令 adb connect xxx.xxx.xxx.xxx adb shell reboot update 正常的话，N1会通过Usb启动进入Armbian系统 </description>
+    </item>
+    
+  </channel>
+</rss>

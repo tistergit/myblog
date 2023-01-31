@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <title>斐讯N1折腾记 // Tister Blog</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.103.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Tister" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="http://www.tister.cn/css/main.min.0fb49e70a30412f97ddfc418e18fefef1d9fcdebe45f634dbbba768b00fe1eec.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="斐讯N1折腾记"/>
+<meta name="twitter:description" content="开篇 从PDD上掏了几个斐讯N1，最初是做为电视盒子来使用的，100以内的价格，使用起来也挺不错的，后来看到网上好多人用它刷Openwrt作旁路由，后来又看到有人用它安装Linux系统，喜欢折腾的我怎么可能不试试呢。
+关于盒子降级 貌似我收到的几个盒子都无需降级，可能从PDD上淘过来的，已经被降级过了
+Openwrt刷回Armbian 直接用安装了Armbian的U盘启动是不行的，需要把Openwrt刷回Android系统，再通过Android刷Armbian。
+刷Android 请注意按如下顺序：
+先把双头Usb线接好（一头接电脑Usb口，另一头接N1靠近HDMI口的Usb口 打开N1刷机软件（USB_Burning_Tool)，加载镜像 把默认选中的[擦除flash]和[擦除bootloader]两个选项勾选掉，意思是：不要选中这两个选项 点击[开始]按钮 给N1通电，刷机会自动开始，过程不要中断，待刷机100%完成即可 点击[停止]按钮，断开Usb和电源连接线，刷机即完成 刷Armbian 下载N1版本的Armbian，下载链接,请注意，N1选择s905d的版本 解压下载的gz文件，使用Rufus把镜像写到U盘中 把U盘插入N1靠近HDMI旁边的USB口 给N1通电，它会默认进入Android系统 在路由器上找一下盒子通过DHCP获取的IP地址，记下这个IP 通过Android的ADB（在platform-tools工具包中）连接N1盒子，执行如下命令 adb connect xxx.xxx.xxx.xxx adb shell reboot update 正常的话，N1会通过Usb启动进入Armbian系统 "/>
+
+    <meta property="og:title" content="斐讯N1折腾记" />
+<meta property="og:description" content="开篇 从PDD上掏了几个斐讯N1，最初是做为电视盒子来使用的，100以内的价格，使用起来也挺不错的，后来看到网上好多人用它刷Openwrt作旁路由，后来又看到有人用它安装Linux系统，喜欢折腾的我怎么可能不试试呢。
+关于盒子降级 貌似我收到的几个盒子都无需降级，可能从PDD上淘过来的，已经被降级过了
+Openwrt刷回Armbian 直接用安装了Armbian的U盘启动是不行的，需要把Openwrt刷回Android系统，再通过Android刷Armbian。
+刷Android 请注意按如下顺序：
+先把双头Usb线接好（一头接电脑Usb口，另一头接N1靠近HDMI口的Usb口 打开N1刷机软件（USB_Burning_Tool)，加载镜像 把默认选中的[擦除flash]和[擦除bootloader]两个选项勾选掉，意思是：不要选中这两个选项 点击[开始]按钮 给N1通电，刷机会自动开始，过程不要中断，待刷机100%完成即可 点击[停止]按钮，断开Usb和电源连接线，刷机即完成 刷Armbian 下载N1版本的Armbian，下载链接,请注意，N1选择s905d的版本 解压下载的gz文件，使用Rufus把镜像写到U盘中 把U盘插入N1靠近HDMI旁边的USB口 给N1通电，它会默认进入Android系统 在路由器上找一下盒子通过DHCP获取的IP地址，记下这个IP 通过Android的ADB（在platform-tools工具包中）连接N1盒子，执行如下命令 adb connect xxx.xxx.xxx.xxx adb shell reboot update 正常的话，N1会通过Usb启动进入Armbian系统 " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://www.tister.cn/posts/%E6%96%90%E8%AE%AFn1%E6%8A%98%E8%85%BE%E8%AE%B0/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-09-18T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-09-18T00:00:00+00:00" />
+
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="http://www.tister.cn"><img class="app-header-avatar" src="/avatar.png" alt="Tister" /></a>
+      <span class="app-header-title">Tister Blog</span>
+      <nav class="app-header-menu">
+          <a class="app-header-menu-item" href="/">Home</a>
+             - 
+          
+          <a class="app-header-menu-item" href="/tags/">Tags</a>
+             - 
+          
+          <a class="app-header-menu-item" href="/about/">About</a>
+      </nav>
+      <p>强哥的自留地&lt;a href=&#39;aa&#39;&gt;aaa&lt;/a&gt;</p>
+      <div class="app-header-social">
+        
+          <a href="https://github.com/tistergit" target="_blank" rel="noreferrer noopener me">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>Github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+          </a>
+        
+          <a href="https://github.com/tistergit" target="_blank" rel="noreferrer noopener me">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>Github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+          </a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">斐讯N1折腾记</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Sep 18, 2022
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          1 min read
+        </div>
+      </div>
+    </header>
+    <div class="post-content">
+      <h3 id="开篇">开篇</h3>
+<p>从PDD上掏了几个斐讯N1，最初是做为电视盒子来使用的，100以内的价格，使用起来也挺不错的，后来看到网上好多人用它刷Openwrt作旁路由，后来又看到有人用它安装Linux系统，喜欢折腾的我怎么可能不试试呢。</p>
+<h3 id="关于盒子降级">关于盒子降级</h3>
+<p>貌似我收到的几个盒子都无需降级，可能从PDD上淘过来的，已经被降级过了</p>
+<h3 id="openwrt刷回armbian">Openwrt刷回Armbian</h3>
+<p>直接用安装了Armbian的U盘启动是不行的，需要把Openwrt刷回Android系统，再通过Android刷Armbian。</p>
+<h3 id="刷android">刷Android</h3>
+<p>请注意按如下顺序：</p>
+<ol>
+<li>先把双头Usb线接好（一头接电脑Usb口，另一头接N1靠近HDMI口的Usb口</li>
+<li>打开N1刷机软件（USB_Burning_Tool)，加载镜像</li>
+<li>把默认选中的[擦除flash]和[擦除bootloader]两个选项勾选掉，意思是：不要选中这两个选项</li>
+<li>点击[开始]按钮</li>
+<li>给N1通电，刷机会自动开始，过程不要中断，待刷机100%完成即可</li>
+<li>点击[停止]按钮，断开Usb和电源连接线，刷机即完成</li>
+</ol>
+<h3 id="刷armbian">刷Armbian</h3>
+<ol>
+<li>下载N1版本的Armbian，<a href="https://github.com/ophub/amlogic-s9xxx-armbian/releases">下载链接</a>,请注意，N1选择s905d的版本</li>
+<li>解压下载的gz文件，使用Rufus把镜像写到U盘中</li>
+<li>把U盘插入N1靠近HDMI旁边的USB口</li>
+<li>给N1通电，它会默认进入Android系统</li>
+<li>在路由器上找一下盒子通过DHCP获取的IP地址，记下这个IP</li>
+<li>通过Android的ADB（在platform-tools工具包中）连接N1盒子，执行如下命令</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>    adb connect xxx.xxx.xxx.xxx
+</span></span><span style="display:flex;"><span>    adb shell reboot update
+</span></span></code></pre></div><ol start="7">
+<li>正常的话，N1会通过Usb启动进入Armbian系统</li>
+</ol>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>
