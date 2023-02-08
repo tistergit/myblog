@@ -29,6 +29,10 @@ paginate = 8
     icon = "github"
     name = "Github"
     url = "https://github.com/tistergit"
+  [[params.social]]
+    icon = "mail"
+    name = "email"
+    url = "tister##qq.com"
 
 
   # Default theme
