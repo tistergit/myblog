@@ -113,6 +113,13 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
+#
+chmod a+r /etc/kubernetes/admin.conf
+
+export https_proxy=http://192.168.8.250:7890
+export http_proxy=http://192.168.8.250:7890
+export no_proxy=localhost,127.0.0.1,192.168.8.0/24
+
 ```
 安装上述后，
 
@@ -130,4 +137,22 @@ kubectl create -f https://projectcalico.docs.tigera.io/manifests/calico.yaml
 kubeadm token create --print-join-command
 ```
 
-w
+```shell
+sudo hostnamectl set-hostname worker41
+```
+
+```shell
+mkdir -p /etc/systemd/system/containerd.service.d
+
+cat > /etc/systemd/system/containerd.service.d/http_proxy.conf << EOF
+[Service]
+Environment="HTTP_PROXY=http://192.168.8.250:7890"
+Environment="HTTPS_PROXY=http://192.168.8.250:7890"
+Environment="NO_PROXY=192.168.8.0/24"
+EOF
+
+
+sudo systemctl daemon-reload
+sudo systemctl restart containerd
+
+```

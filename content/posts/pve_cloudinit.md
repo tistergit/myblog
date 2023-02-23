@@ -62,4 +62,5 @@ qm start 123
 
 ```
 
-[参考文档](https://pve.proxmox.com/wiki/Cloud-Init_Support)
+[参考文档1](https://pve.proxmox.com/wiki/Cloud-Init_Support)
+[参考文档2](https://gameapp.club/post/2022-07-30-custom-cloud-init-for-pve/)
