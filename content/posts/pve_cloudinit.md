@@ -30,7 +30,13 @@ qm set 9000 --ide2 local-lvm:cloudinit
 qm set 9000 --boot c --bootdisk scsi0
 
 # We also want to configure a serial console and use that as display. Many Cloud-Init images rely on that, because it is an requirement for OpenStack images.
-qm set 9000 --serial0 socket --vga serial0
+#qm set 9000 --serial0 socket --vga serial0
+
+# resize disk size to 50G
+qm disk resize 9000 scsi0 50G
+
+# 设置显示属性
+qm set 9000 --vga std
 
 # Copy your public ssh key to the proxmox server, so we can add this key to the cloud-init template:
 [user_machine ~$] scp ~/.ssh/id_rsa.pub root@PROXMOX_NODE:/tmp
