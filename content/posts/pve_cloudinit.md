@@ -21,7 +21,7 @@ qm create 9000 --memory 2048 --net0 virtio,bridge=vmbr0
 qm importdisk 9000 focal-server-cloudimg-amd64.img local-lvm
 
 # finally attach the new disk to the VM as scsi drive
-qm set 9000 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-1
+qm set 9000 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-0
 
 # The next step is to configure a CDROM drive, used to pass the Cloud-Init data to the VM.
 qm set 9000 --ide2 local-lvm:cloudinit
