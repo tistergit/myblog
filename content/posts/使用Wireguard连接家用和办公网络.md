@@ -5,11 +5,21 @@ draft: false
 ---
 
 
-![Alt text](/images/home_wg.jpg)
+![Alt text](/images/wg2.jpg)
 
-### Wireguard安装
+前言：两处房子都有千兆光纤宽带，有时经常访问一下内部NAS和打印机，就想怎么用WG把两个内网打通，同理该方案也可以用在办公网和云VPC打通，实现办公网和云生产网络互联互通访问。我没有采用网关路由的方式，因为如果网关路由方式，需要两边都使用支持Openwrt的路由，之前有几个Huawei 556a路由器，可以刷Openwrt，可惜网络是百兆的，跑不到千兆，也买了一个友善R2S，运行了1~2天就死机了，不知道是不是放在弱电箱中散热不佳的原因；同时家里还有几个之前买的斐讯N1没什么用，正好可以把它用起来。该方案唯一的要求是家里的主路由器支持加自定义路由。
 
-Linux
+硬件要求:
+- 一般家用千兆路由器（支持自定义路由）两台
+- 斐讯N1两台，安装armbian linux操作系统
+- 云服务器一台，安装Linux操作系统，CPU 2核4G就够用了，带宽根据情况选择，我买的是动态带宽
+
+
+### WG安装和生成密钥
+
+以下过程在云服务器和斐讯N1都执行同样的步骤
+
+- WG安装
 
 ```shell
 $ sudo add-apt-repository ppa:wireguard/wireguard
@@ -17,32 +27,18 @@ $ sudo apt-get update
 $ sudo apt-get install wireguard
 ```
 
-MacOS
-
-```shell
-$ brew install wireguard-tools
-```
-
-### 生成密钥
+- 生成密钥
 
 通过 wg 脚本生成公钥和私钥。私钥自用，公钥给到对端使用，跟ssh免密码登录类似
 
 ```shell
 $ wg genkey | tee privatekey | wg pubkey > publickey
 ```
-```
-example privatekey - mNb7OIIXTdgW4khM7OFlzJ+UPs7lmcWHV7xjPgakMkQ=
-example publickey - 0qRWfQ2ihXSgzUbmHXQ70xOxDd7sZlgjqGSPA9PFuHg=
-```
-
-[可选]为了防止未来可能存在的量子攻击，WireGuard 还额外引入了 PreSharedKey Layer 对所有数据包进行对称加密，preshared 密钥仅在client端配置
-
-```shell
-# wg genpsk > preshared
-```
 
 
-### 服务端配置
+### 系统配置
+
+- 云服务器
 
 服务端只需配置[Interface]即可，[Peer]端的配置可由 wg set 命令完成添加
 
@@ -60,16 +56,23 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACC
 SaveConfig = true   ## 通过wg命令更改的配置保存到配置文件
 
 [Peer]
-#Peer #PVE
+# Office N1
 PublicKey = [Peer#1PublicKey]
 AllowedIPs = 192.168.100.5/32, 192.168.8.0/24
 
 
 [Peer]
-#Peer #mac book
+# Home N1
 PublicKey = [Peer#4PublicKey] 
-AllowedIPs = 192.168.100.2/32
+AllowedIPs = 192.168.100.7/32, 192.168.7.0/24
 ##################################
+
+```
+
+
+- Home N1
+
+```
 
 ```
 
