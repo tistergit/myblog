@@ -3,13 +3,46 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>http://www.tister.cn/posts/</loc>
-    <lastmod>2022-12-21T00:00:00+00:00</lastmod>
+    <lastmod>2023-03-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://www.tister.cn/</loc>
-    <lastmod>2022-12-21T00:00:00+00:00</lastmod>
+    <lastmod>2023-03-22T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://www.tister.cn/posts/wireguard_setup/</loc>
-    <lastmod>2022-12-21T00:00:00+00:00</lastmod>
+    <loc>http://www.tister.cn/posts/%E4%BD%BF%E7%94%A8wireguard%E8%BF%9E%E6%8E%A5%E5%AE%B6%E7%94%A8%E5%92%8C%E5%8A%9E%E5%85%AC%E7%BD%91%E7%BB%9C/</loc>
+    <lastmod>2023-03-22T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/golang%E7%8E%AF%E5%A2%83dockfile%E5%85%B8%E5%9E%8B%E7%94%A8%E4%BE%8B/</loc>
+    <lastmod>2023-02-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/kubectl%E5%A4%87%E5%BF%98%E5%BD%95/</loc>
+    <lastmod>2023-02-22T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/sql%E6%97%A5%E5%B8%B8%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</loc>
+    <lastmod>2023-02-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/git_cmd/</loc>
+    <lastmod>2023-02-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/k8s_configmap/</loc>
+    <lastmod>2023-02-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/docker_image_build_push/</loc>
+    <lastmod>2023-02-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/golang%E8%BF%90%E8%A1%8Cdocker%E9%95%9C%E5%83%8F%E5%BB%BA%E7%AB%8B/</loc>
+    <lastmod>2023-02-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/openwrt%E4%B8%8B%E9%85%8D%E7%BD%AEwireguard/</loc>
+    <lastmod>2023-02-04T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/pve_cloudinit/</loc>
+    <lastmod>2023-02-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/wireguard%E6%90%AD%E5%BB%BA%E5%AE%B6%E7%94%A8vpn/</loc>
+    <lastmod>2023-01-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://www.tister.cn/posts/devops%E5%BC%80%E5%8F%91%E6%A8%A1%E5%BC%8F/</loc>
+    <lastmod>2022-12-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://www.tister.cn/posts/grub_and_win11/</loc>
     <lastmod>2022-12-11T00:00:00+00:00</lastmod>

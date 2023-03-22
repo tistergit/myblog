@@ -5,17 +5,144 @@
     <link>http://www.tister.cn/posts/</link>
     <description>Recent content in Posts on Tister Blog</description>
     <generator>Hugo -- gohugo.io</generator>
-    <lastBuildDate>Wed, 21 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://www.tister.cn/posts/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 22 Mar 2023 00:00:00 +0000</lastBuildDate><atom:link href="http://www.tister.cn/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>一个Wireguard带多个Client</title>
-      <link>http://www.tister.cn/posts/wireguard_setup/</link>
-      <pubDate>Wed, 21 Dec 2022 00:00:00 +0000</pubDate>
+      <title>使用Wireguard连接家用和办公网络</title>
+      <link>http://www.tister.cn/posts/%E4%BD%BF%E7%94%A8wireguard%E8%BF%9E%E6%8E%A5%E5%AE%B6%E7%94%A8%E5%92%8C%E5%8A%9E%E5%85%AC%E7%BD%91%E7%BB%9C/</link>
+      <pubDate>Wed, 22 Mar 2023 00:00:00 +0000</pubDate>
       
-      <guid>http://www.tister.cn/posts/wireguard_setup/</guid>
-      <description>Install WireGuard via whatever package manager you use. For me, I use apt.
+      <guid>http://www.tister.cn/posts/%E4%BD%BF%E7%94%A8wireguard%E8%BF%9E%E6%8E%A5%E5%AE%B6%E7%94%A8%E5%92%8C%E5%8A%9E%E5%85%AC%E7%BD%91%E7%BB%9C/</guid>
+      <description>前言：两处房子都有千兆光纤宽带，有时经常访问一下内部NAS和打印机，就想怎么用WG把两个内网打通，同理该方案也可以用在办公网和云VPC打通，实现办公网和云生产网络互联互通访问。我没有采用网关路由的方式，因为如果网关路由方式，需要两边都使用支持Openwrt的路由，之前有几个Huawei 556a路由器，可以刷Openwrt，可惜网络是百兆的，跑不到千兆，也买了一个友善R2S，运行了1~2天就死机了，不知道是不是放在弱电箱中散热不佳的原因；同时家里还有几个之前买的斐讯N1没什么用，正好可以把它用起来。该方案唯一的要求是家里的主路由器支持加自定义路由。
+硬件要求:
+一般家用千兆路由器（支持自定义路由）两台 斐讯N1两台，安装armbian linux操作系统 云服务器一台，安装Linux操作系统，CPU 2核4G就够用了，带宽根据情况选择，我买的是动态带宽 WG安装和生成密钥 以下过程在云服务器和斐讯N1都执行同样的步骤
+WG安装 $ sudo add-apt-repository ppa:wireguard/wireguard $ sudo apt-get update $ sudo apt-get install wireguard 生成密钥 通过 wg 脚本生成公钥和私钥。私钥自用，公钥给到对端使用，跟ssh免密码登录类似
+$ wg genkey | tee privatekey | wg pubkey &amp;gt; publickey 系统配置 云服务器 服务端只需配置[Interface]即可，[Peer]端的配置可由 wg set 命令完成添加
+注意 AllowedIPs 的子网掩码需要使用/32，不然会造成多条Peer间的路由冲突
+################################ [Interface] Address = 192.168.100.1/24 ##服务端IP DNS = 1.1.1.1 PrivateKey = [ServerPrivateKey] ##服务端私钥 ListenPort = 51820 PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE SaveConfig = true ## 通过wg命令更改的配置保存到配置文件 [Peer] # Office N1 PublicKey = [Peer#1PublicKey] AllowedIPs = 192.</description>
+    </item>
+    
+    <item>
+      <title>Golang环境Dockfile典型用例</title>
+      <link>http://www.tister.cn/posts/golang%E7%8E%AF%E5%A2%83dockfile%E5%85%B8%E5%9E%8B%E7%94%A8%E4%BE%8B/</link>
+      <pubDate>Mon, 27 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/golang%E7%8E%AF%E5%A2%83dockfile%E5%85%B8%E5%9E%8B%E7%94%A8%E4%BE%8B/</guid>
+      <description>说明 go语言开发的应用，编译和运行典型Dockerfile文档，通过docker build来编译和创建
+$ docker build -f Dockerfile . Dockerfile
+FROM golang:1.19.0-alpine AS builder # Set Go env ENV CGO_ENABLED=0 GOOS=linux WORKDIR /go/src/hipstershop # Install dependencies RUN apk --update --no-cache add ca-certificates make protoc # Download grpc_health_probe RUN GRPC_HEALTH_PROBE_VERSION=v0.4.11 &amp;amp;&amp;amp; \ wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 &amp;amp;&amp;amp; \ chmod +x /bin/grpc_health_probe # Build Go binary COPY Makefile go.mod go.sum ./ RUN go env -w GOPROXY=https://goproxy.io,direct/ RUN make init &amp;amp;&amp;amp; go mod download COPY .</description>
+    </item>
+    
+    <item>
+      <title>kubectl 备忘录</title>
+      <link>http://www.tister.cn/posts/kubectl%E5%A4%87%E5%BF%98%E5%BD%95/</link>
+      <pubDate>Wed, 22 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/kubectl%E5%A4%87%E5%BF%98%E5%BD%95/</guid>
+      <description>kubectl 备忘录 本页列举了常用的 kubectl 命令和标志。
+Kubectl 自动补全 source &amp;lt;(kubectl completion bash) # 在 bash 中设置当前 shell 的自动补全，要先安装 bash-completion 包。 echo &amp;#34;source &amp;lt;(kubectl completion bash)&amp;#34; &amp;gt;&amp;gt; ~/.bashrc # 在你的 bash shell 中永久地添加自动补全 关于 &amp;ndash;all-namespaces 的一点说明 我们经常用到 &amp;ndash;all-namespaces 参数，你应该要知道它的简写：
+kubectl -A
+Kubectl 上下文和配置 设置 kubectl 与哪个 Kubernetes 集群进行通信并修改配置信息。 查看使用 kubeconfig 跨集群授权访问 文档获取配置文件详细信息。
+kubectl config view # 显示合并的 kubeconfig 配置。 # 同时使用多个 kubeconfig 文件并查看合并的配置 KUBECONFIG=~/.kube/config:~/.kube/kubconfig2 kubectl config view # 获取 e2e 用户的密码 kubectl config view -o jsonpath=&amp;#39;{.</description>
+    </item>
+    
+    <item>
+      <title>SQL使用备忘</title>
+      <link>http://www.tister.cn/posts/sql%E6%97%A5%E5%B8%B8%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</link>
+      <pubDate>Sat, 18 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/sql%E6%97%A5%E5%B8%B8%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</guid>
+      <description>查询A表中有多少条数据在B表中 说通俗一点就是A.ID那列的内容，有多少存在于B.ID那列
+select A.ID, A.NAME from 表A where EXISTS(select * from 表B where A.ID=B.ID) 查询A表中有多少条数据在B表中【不存在】 说通俗一点就是A.ID那列的内容，有多少【不存在】于B.ID那列
+select A.ID, A.NAME from 表A where NOT EXISTS(select * from 表B where A.ID=B.ID) </description>
+    </item>
+    
+    <item>
+      <title>Git使用备忘</title>
+      <link>http://www.tister.cn/posts/git_cmd/</link>
+      <pubDate>Thu, 16 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/git_cmd/</guid>
+      <description>git pull提示用户名、密码问题 git config --global user.name &amp;#34;tisteryu&amp;#34; git config --global user.email &amp;#34;tisteryu@xxx.com&amp;#34; # 注意下面这行也需要设置，https协议不支持密钥认证 git config --global url.git@git.domain.com:.insteadOf https://git.domain.com/ git 配置文件 初始化Git 的项目目录（ /project/.git/config ）或用户根目录（ ~/.gitconfig ）</description>
+    </item>
+    
+    <item>
+      <title>k8s下configMap使用</title>
+      <link>http://www.tister.cn/posts/k8s_configmap/</link>
+      <pubDate>Thu, 16 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/k8s_configmap/</guid>
+      <description>git pull提示用户名、密码问题 apiVersion: v1 kind: Pod metadata: name: test-pod namespace: test spec: containers: - name: test-container image: test:v0.1 volumeMounts: - name: test-volume mountpath: /app/config volumes: - name: test-volume configMap: name:test-conf items: - key: test-conf path: config.yaml git 配置文件 初始化Git 的项目目录（ /project/.git/config ）或用户根目录（ ~/.gitconfig ）</description>
+    </item>
+    
+    <item>
+      <title>Docker镜像构建和Push</title>
+      <link>http://www.tister.cn/posts/docker_image_build_push/</link>
+      <pubDate>Mon, 13 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/docker_image_build_push/</guid>
+      <description>Docker镜像查看 $ docker images REPOSITORY TAG IMAGE ID CREATED SIZE tister/mydemo v1.0 580f6ec2235c 5 hours ago 19.4MB tisteryu-docker.pkg.coding.net/tister.coding.me/mydemo/myimage v1.0 580f6ec2235c 5 hours ago 19.4MB docker-gs-ping latest 053e038cb097 5 hours ago 19.4MB tisteryu-docker.pkg.coding.net/tister.coding.me/mydemo/docker-gs-ping latest 053e038cb097 5 hours ago 19.4MB 上述4个镜像，1和2的ImageID相同，3和4的ImageID相同，但是并不表示1可以推给2的仓库，tister/mydemo 和 docker-gs-ping 的仓库地址是：hub.docker.com
+hub登录和登出 ## 个人仓库 Login $ docker login https://tisteryu-docker.pkg.coding.net/ Username: tister@qq.com Password: Login Succeeded $ docker logout https://tisteryu-docker.pkg.coding.net/ Removing login credentials for tisteryu-docker.pkg.coding.net ## hub.docker.com Login $ docker login Login with your Docker ID to push and pull images from Docker Hub.</description>
+    </item>
+    
+    <item>
+      <title>grpc Docker镜像使用</title>
+      <link>http://www.tister.cn/posts/golang%E8%BF%90%E8%A1%8Cdocker%E9%95%9C%E5%83%8F%E5%BB%BA%E7%AB%8B/</link>
+      <pubDate>Tue, 07 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/golang%E8%BF%90%E8%A1%8Cdocker%E9%95%9C%E5%83%8F%E5%BB%BA%E7%AB%8B/</guid>
+      <description>构建grpc运行Docker镜像 代码地址
+grpc 服务端和客户端，下面过程是怎么通过Docker来运行一个最简单的grpc server程序
+编译代码，在mac下编译后在Linux下运行，所以需要交叉编译
+$ cd greeter_server $ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $ ls -lh -rwxr-xr-x 1 tisteryu staff 11M 2 7 10:57 greeter_server golang:alpine 镜像文件100M+，包含golang sdk等文件，适合用它来编译go语言源文件并运行
+alpine:latest 基础linux系统，文件3M左右，不包含golang sdk，只包含最基础的几个libc libssl so库
+Dockerfile 文件
+# 表示依赖 alpine 最新版 FROM alpine:latest ENV VERSION 1.1 # 在容器根目录 创建一个 apps 目录 WORKDIR /apps # 挂载容器目录 # VOLUME [&amp;#34;/apps/conf&amp;#34;] # 拷贝当前目录下 go_docker_demo1 可以执行文件 COPY greeter_server/greeter_server /apps/golang_app # 拷贝配置文件到容器中 # COPY conf/config.toml /apps/conf/config.</description>
+    </item>
+    
+    <item>
+      <title>Openwrt下配置Wireguard</title>
+      <link>http://www.tister.cn/posts/openwrt%E4%B8%8B%E9%85%8D%E7%BD%AEwireguard/</link>
+      <pubDate>Sat, 04 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/openwrt%E4%B8%8B%E9%85%8D%E7%BD%AEwireguard/</guid>
+      <description>Wireguard软件安装 opkg update opkg install luci-i18n-wireguard-zh-cn luci-app-wireguard kmod-wireguard luci-proto-wireguard wireguard-tools ## reboot router reboot </description>
+    </item>
+    
+    <item>
+      <title>PVE Cloud-Init 使用</title>
+      <link>http://www.tister.cn/posts/pve_cloudinit/</link>
+      <pubDate>Wed, 01 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/pve_cloudinit/</guid>
+      <description>准备Cloud-Init 模板镜像 # 下载Ubuntu 22.04的Image镜像文件 wget https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img # create a new VM qm create 9000 --memory 2048 --net0 virtio,bridge=vmbr0 # 有些文档写的是用：qm set 9000 --scsi0 local-lvm:0,import-from=bionic-server-cloudimg-amd64.img 方式导入，会报格式错误，需要使用importdisk导出才可以 # import the downloaded disk to local-lvm storage qm importdisk 9000 focal-server-cloudimg-amd64.img local-lvm # finally attach the new disk to the VM as scsi drive qm set 9000 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9000-disk-0 # The next step is to configure a CDROM drive, used to pass the Cloud-Init data to the VM.</description>
+    </item>
+    
+    <item>
+      <title>Wireguard搭建家用VPN</title>
+      <link>http://www.tister.cn/posts/wireguard%E6%90%AD%E5%BB%BA%E5%AE%B6%E7%94%A8vpn/</link>
+      <pubDate>Mon, 30 Jan 2023 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/wireguard%E6%90%AD%E5%BB%BA%E5%AE%B6%E7%94%A8vpn/</guid>
+      <description>Wireguard安装 Linux
 $ sudo add-apt-repository ppa:wireguard/wireguard $ sudo apt-get update $ sudo apt-get install wireguard MacOS
-$ brew install wireguard-tools Generate key your key pairs. The key pairs are just that, key pairs. They can be generated on any device, as long as you keep the private key on the source and place the public on the destination.
-$ wg genkey | tee privatekey | wg pubkey &amp;gt; publickey example privatekey - mNb7OIIXTdgW4khM7OFlzJ+UPs7lmcWHV7xjPgakMkQ= example publickey - 0qRWfQ2ihXSgzUbmHXQ70xOxDd7sZlgjqGSPA9PFuHg= One can also generate a preshared key to add an additional layer of symmetric-key cryptography to be mixed into the already existing public-key cryptography, for post-quantum resistance.</description>
+$ brew install wireguard-tools 生成密钥 通过 wg 脚本生成公钥和私钥。私钥自用，公钥给到对端使用，跟ssh免密码登录类似
+$ wg genkey | tee privatekey | wg pubkey &amp;gt; publickey example privatekey - mNb7OIIXTdgW4khM7OFlzJ+UPs7lmcWHV7xjPgakMkQ= example publickey - 0qRWfQ2ihXSgzUbmHXQ70xOxDd7sZlgjqGSPA9PFuHg= [可选]为了防止未来可能存在的量子攻击，WireGuard 还额外引入了 PreSharedKey Layer 对所有数据包进行对称加密，preshared 密钥仅在client端配置
+# wg genpsk &amp;gt; preshared 服务端配置 服务端只需配置[Interface]即可，[Peer]端的配置可由 wg set 命令完成添加
+注意 AllowedIPs 的子网掩码需要使用/32，不然会造成多条Peer间的路由冲突
+################################ [Interface] Address = 192.168.100.1/24 ##服务端IP DNS = 1.</description>
+    </item>
+    
+    <item>
+      <title>DevOps开发模式</title>
+      <link>http://www.tister.cn/posts/devops%E5%BC%80%E5%8F%91%E6%A8%A1%E5%BC%8F/</link>
+      <pubDate>Sun, 18 Dec 2022 00:00:00 +0000</pubDate>
+      
+      <guid>http://www.tister.cn/posts/devops%E5%BC%80%E5%8F%91%E6%A8%A1%E5%BC%8F/</guid>
+      <description>对于一个具有一定规模的开发团队而言，团队 Devops 的建设都是迈向高效开发的必经之路，即便没有达到 Devops 建设的程度，为了团队中开发之间的高效协作，基于版本管理工具来选择团队合理的代码分支开发模式都是非常重要的一环。对于这一问题，业界一般有两种主流模式可以供团队选择，特性分支开发模式和主干开发模式，下面就分别介绍一下这两种模式的思路和流程，以及各自的优劣，最后谈一下个人对于不同规模团队应该如何选择开发模式以及如何落地的看法。
+特性分支开发模式 特性分支开发模式是指为一个或多个特定的需求 / 缺陷 / 任务，从主干分支上拉出特性代码分支（branch），在其特性代码分支上完成相应的开发（一般会经过增量测试）后，再把它合并（merge）到主干分支准备发布的开发模式。 一般特性分支开发模式中常用的有三种：Git-Flow 模式，Github-Flow 模式和 Gitlab-Flow 模式。
+Git-Flow 模式 标准的 Git-Flow 模式一般会包含以下几种分支：
+feature 分支：开发者进行对应功能开发的开发分支。 develop 分支：对开发者开发的功能进行集成的分支。 release 分支：负责版本发布的分支。 hotfix 分支：对线上 bug 进行热修复分支。 master 分支：最新线上代码的基准分支。
+每个特性功能都会有属于自己的分支，即 feature 分支，开发者一般会在对应的 feature 分支上做特性功能的开发，如果开发者需要同时进行两个特性功能的开发，需要创建两个 feature 分支，通过 checkout 命令进行分支切换，来防止开发时两个特性功能相互干扰。 一般会在单个特性功能开发完成后，在对应 feature 分支上进行单独验证，在验证通过后，将验证通过的 feature 分支 merge 到 develop 集成分支上，一般 develop 最初是从 master 主分支上拉取。develop 分支永远保存都是最新未发布版本，所以一般特性功能完成 merge 到 develop 分支后，至少会在 develop 分支上进行一次完整的特性功能测试，发布新版本前，也会在 develop 分支上进行全测试，当 develop 分支全测试通过后，会从 develop 分支上拉出 release 分支进行版本发布，并将 develop 的最新代码 merge 到 master 分支上。 若发生线上紧急 bug ，需要进行热修复时，Git-Flow 模式也提供了两种方法：</description>
     </item>
     
     <item>
