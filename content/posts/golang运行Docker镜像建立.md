@@ -116,3 +116,24 @@ REPOSITORY       TAG          IMAGE ID       CREATED              SIZE
 docker-gs-ping   multistage   e3fdde09f172   About a minute ago   27.1MB
 docker-gs-ping   latest       336a3f164d0f   About an hour ago    540MB
 ```
+
+
+### Docker日常命令
+
+```shell
+# 强制重新生成镜像，但也会用依赖镜像Cache
+$ sudo docker compose up -d --build --force-recreate
+
+# 清空镜像缓存
+$ docker system prune -a
+
+# 运行镜像
+$ sudo docker run -t -d ubuntu:22.04
+
+# 进入Container，2f 是CONTAINER ID
+sudo docker exec -it 2f /bin/sh   
+
+# 禁用多阶段并行编译。多阶段编译有时有上下文依赖，偶现 runc run failed: unable to start container process: exec: "/bin/sh": stat /bin/sh: no such file or directory 问题，可通过临时关闭并行编译解决
+$ DOCKER_BUILDKIT=0 sudo docker compose up -d --build
+
+```
