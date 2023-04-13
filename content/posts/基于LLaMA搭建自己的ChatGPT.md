@@ -1,6 +1,6 @@
 ---
 title: "基于LLaMA搭建自己的ChatGPT"
-date: 2023-4-12
+date: 2023-04-12
 draft: false
 ---
 
@@ -29,7 +29,7 @@ Finetune是指在一个已经预先训练好的机器学习模型的基础上，
 
 ### 使用 Docker 和 Alpaca LoRA 对 LLaMA 65B 大模型进行 Fine-Tune
 
-![Alt text](Architecture_Overview.png)
+![Alt text](/images/llama/Architecture_Overview.png)
 
 1.一块Nvidia的显卡，推理可以通过llama.cpp，只使用CPU，不需要GPU即可，但是训练必须要GPU
 
@@ -59,7 +59,7 @@ $ sudo apt-get -y install cuda-drivers
 ```
 Follow the post-installation steps in the CUDA Installation Guide for Linux to setup environment variables, NVIDIA persistence daemon (recommended) and to verify the successful installation of the driver.
 
-3. 安装 Docker
+1. 安装 Docker
 
 ```
 curl https://get.docker.com | sh \
