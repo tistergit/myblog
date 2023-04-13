@@ -17,7 +17,7 @@ draft: false
 
 ### WG安装和生成密钥
 
-以下过程在云服务器和斐讯N1都执行同样的步骤
+  以下过程在云服务器和斐讯N1都执行同样的步骤
 
 - WG安装
 
@@ -29,63 +29,15 @@ $ sudo apt-get install wireguard
 
 - 生成密钥
 
-通过 wg 脚本生成公钥和私钥。私钥自用，公钥给到对端使用，跟ssh免密码登录类似
+  通过 wg 脚本生成公钥和私钥。私钥自用，公钥给到对端使用，跟ssh免密码登录类似
 
 ```shell
 $ wg genkey | tee privatekey | wg pubkey > publickey
 ```
 
+- 打开ip forword
 
-### 系统配置
-
-- 云服务器
-
-服务端只需配置[Interface]即可，[Peer]端的配置可由 wg set 命令完成添加
-
-**注意** AllowedIPs 的子网掩码需要使用/32，不然会造成多条Peer间的路由冲突
-
-```
-################################
-[Interface]
-Address = 192.168.100.1/24  ##服务端IP
-DNS = 1.1.1.1
-PrivateKey = [ServerPrivateKey]  ##服务端私钥
-ListenPort = 51820
-PostUp   = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-SaveConfig = true   ## 通过wg命令更改的配置保存到配置文件
-
-[Peer]
-# Office N1
-PublicKey = [Peer#1PublicKey]
-AllowedIPs = 192.168.100.5/32, 192.168.8.0/24
-
-
-[Peer]
-# Home N1
-PublicKey = [Peer#4PublicKey] 
-AllowedIPs = 192.168.100.7/32, 192.168.7.0/24
-##################################
-
-```
-
-
-- Home N1
-
-```
-
-```
-
-启动端口
-
-```shell
-wg-quick up wg0
-```
-
-
-### PVE配置
-
-在 /etc/sysct.conf文件中，打开 ip forward
+  在 /etc/sysct.conf文件中，打开 ip forward
 ```
 # Uncomment the next line to enable packet forwarding for IPv4
 net.ipv4.ip_forward=1
@@ -93,21 +45,55 @@ net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1
 ```
 
-Wireguard其实没有Server/Client的概念，是Peer To Peer模式，下面是一个Peer的配置示例
 
-**注意** Address 的配置与Server端的AllowedIPs相同，但是掩码不一样，要特别注意
+### 系统配置
+
+- 云服务器
+
+  服务端只需配置[Interface]即可，[Peer]端的配置可由 wg set 命令完成添加
+
+  **注意** AllowedIPs 的子网掩码需要使用/32，不然会造成多条Peer间的路由冲突
 
 ```
-###################################
+################################
 [Interface]
-Address = 192.168.100.5/24   ### 客户端IP
+Address = 192.168.100.1/24  ##服务端IP
+## DNS = 1.1.1.1
+PrivateKey = [ServerPrivateKey]  ##服务端私钥
+ListenPort = 51820
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+SaveConfig = false   ## 通过wg命令更改的配置保存到配置文件
+
+[Peer]
+# Home N1
+PublicKey = [Peer#1PublicKey]
+AllowedIPs = 192.168.100.5/32, 192.168.8.0/24
+
+
+[Peer]
+# Office N1
+PublicKey = [Peer#4PublicKey] 
+AllowedIPs = 192.168.100.7/32, 192.168.7.0/24
+##################################
+
+```
+
+
+- Home N1配置
+
+  /etc/wireguard/wg0.conf
+
+```
+[Interface]
+Address = 192.168.100.5/24
 PrivateKey = [PrivateKeyPeer#1]
 
 [Peer]
 PublicKey = [ServerPublicKey]
-PresharedKey = [PresharedKey]
+#PresharedKey = [PresharedKey]
 Endpoint = some.domain.com:51820
-AllowedIPs = 192.168.100.0/24  ##允许100.x网段通过
+AllowedIPs = 192.168.100.0/24, 192.168.7.0/24  ##100.0是wg网络，7.0是对端的Office网络
 # if you want to do split tunnel, add your allowed IPs
 # for example if your home network is 192.168.1.0/24
 # AllowedIPs = 192.168.1.0/24
@@ -115,7 +101,28 @@ AllowedIPs = 192.168.100.0/24  ##允许100.x网段通过
 # This is for if you're behind a NAT and
 # want the connection to be kept alive.
 PersistentKeepalive = 25
-########################################
+```
+
+- Office N1配置
+
+  /etc/wireguard/wg0.conf
+
+```
+[Interface]
+Address = 192.168.100.7/24   ### 客户端IP
+PrivateKey = [PrivateKeyPeer#2]
+
+[Peer]
+PublicKey = [ServerPublicKey]
+Endpoint = nj.tister.cn:51820
+AllowedIPs = 192.168.100.0/24,192.168.8.0/24  ##100.0是wg网络，8.0是对端的Home网络
+# if you want to do split tunnel, add your allowed IPs
+# for example if your home network is 192.168.1.0/24
+# AllowedIPs = 192.168.1.0/24
+
+# This is for if you're behind a NAT and
+# want the connection to be kept alive.
+PersistentKeepalive = 25
 ```
 
 启动端口
@@ -123,13 +130,6 @@ PersistentKeepalive = 25
 ```shell
 wg-quick up wg0
 ```
-
-在服务端Console下，执行命令添加Peer，注意掩码与Peer中的/24不一致，这里要用/32
-
-```shell
-wg set wg0 peer <client_pubkey> allowed-ips 192.168.100.5/32
-```
-
 
 把wg服务加入自启动
 
@@ -140,7 +140,6 @@ $ sudo systemctl start wg-quick@wg0.service
 
 
 ### mac book配置
-
 
 ```
 ###################################
@@ -153,7 +152,7 @@ Address = 192.168.100.2/24
 [Peer]
 PublicKey = [ServerPublicKey]
 Endpoint = some.domain.com:51820
-AllowedIPs = 192.168.100.0/24,192.168.8.0/24
+AllowedIPs = 192.168.100.0/24,192.168.8.0/24,192.168.7.0/24  ## 把wg网络、Home网络、Office网络都加到wg0路由中
 PersistentKeepalive = 25
 ########################################
 ```
@@ -164,11 +163,20 @@ PersistentKeepalive = 25
 wg-quick up wg0
 ```
 
+### 路由配置
 
-### Home路由器配置
-增加一条静态路由，类似下面的Linux语法
+- Home路由器配置
+增加两条静态路由：
 ```shell
 route add -net 192.168.100.0/24 gw 192.168.8.5
+route add -net 192.168.7.0/24 gw 192.168.8.5
+```
+
+- Office路由器配置
+增加两条静态路由：
+```shell
+route add -net 192.168.100.0/24 gw 192.168.7.20
+route add -net 192.168.8.0/24 gw 192.168.7.20
 ```
 
 
