@@ -65,3 +65,32 @@ ansible-vault create foo.yml
 ansible-playbook -i hosts.all reboot-playbook.yaml -k --tags "reboot"
 ```
 
+### ssh多主机密钥交换via ansible play-book
+
+```yaml
+- name: Exchange Keys between servers
+  hosts: multi
+  tasks:
+    - name: SSH KeyGen command
+      tags: run
+      shell: > 
+        ssh-keygen -q -b 2048 -t rsa -N "" -C "creating SSH" -f ~/.ssh/id_rsa
+        creates="~/.ssh/id_rsa"
+
+    - name: Fetch the keyfile from the node to master
+      tags: run
+      fetch: 
+        src: "~/.ssh/id_rsa.pub"
+        dest: "buffer/{{ansible_hostname}}-id_rsa.pub"
+        flat: yes
+
+    - name: Copy the key add to authorized_keys using Ansible module
+      tags: runcd
+      authorized_key:
+        user: vagrant
+        state: present
+        key: "{{ lookup('file','buffer/{{item}}-id_rsa.pub')}}"
+      when: "{{ item != ansible_hostname }}"
+      with_items: 
+        - "{{ groups['multi'] }}"
+```

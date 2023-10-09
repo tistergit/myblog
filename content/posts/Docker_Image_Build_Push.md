@@ -73,3 +73,11 @@ The push refers to repository [tisteryu-docker.pkg.coding.net/tister.coding.me/m
 latest: digest: sha256:8098514deb6e50d1eae7cfffd600eaf322483315d3650f0922b433777efcec38 size: 739
 
 ```
+
+
+
+```docker
+
+CMD ['sleep' 'infinity']
+
+```
