@@ -1,0 +1,1 @@
+hugo -b https://www.tister.cn
